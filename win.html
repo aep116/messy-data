@@ -376,8 +376,11 @@ document.getElementById('stat-removed-lbl').textContent = 'duplicates removed';
 document.getElementById('stat-time').textContent = seconds + 's';
 document.getElementById('stat-time-lbl').textContent = 'processing time';
 
-// Stats card
-const isAlreadyClean = removed === '0';
+// Stats card — prefer explicit changed param; fall back to removed===0 for direct/bookmarked visits
+const changedParam = params.get('changed');
+const isAlreadyClean = changedParam !== null
+  ? changedParam === '0'
+  : removed === '0';
 document.getElementById('card-brand').textContent = t.winCardBrand;
 document.getElementById('card-rows').textContent = rows;
 document.getElementById('card-rows-lbl').textContent = crm + ' rows cleaned';

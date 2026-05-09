@@ -950,7 +950,7 @@ select.field-input { appearance: auto; cursor: pointer; }
       <!-- Progress bar -->
       <div id="progress-wrap">
         <div class="progress-label" id="progress-label">Processing...</div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div></div>
       </div>
 
       <button id="process-btn"></button>
@@ -981,8 +981,12 @@ select.field-input { appearance: auto; cursor: pointer; }
         </label>
         <button class="btn-dl-xlsx" id="dl-xlsx-btn"></button>
       </div>
-      <div class="msg msg-err" id="xlsx-error" style="display:none"></div>
+      <div class="msg msg-err" id="xlsx-error" role="alert" aria-live="assertive" style="display:none"></div>
 
+      <label class="keep-settings-row" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="keep-settings-cb">
+        <span id="keep-settings-lbl"></span>
+      </label>
       <button class="btn-clean-another" id="clean-another-btn"></button>
     </div><!-- /download-section -->
 
@@ -996,7 +1000,7 @@ select.field-input { appearance: auto; cursor: pointer; }
 <div id="processing-overlay" style="display:none">
   <div class="processing-box">
     <div class="processing-spinner"></div>
-    <div class="processing-text" id="processing-text"></div>
+    <div class="processing-text" id="processing-text" aria-live="polite" aria-atomic="true"></div>
   </div>
 </div>
 
@@ -1008,6 +1012,7 @@ select.field-input { appearance: auto; cursor: pointer; }
     <div class="field-row">
       <label class="field-lbl" id="recovery-email-lbl"></label>
       <input type="email" class="field-input" id="recovery-email-input" placeholder="you@example.com">
+      <div id="recovery-email-error" style="display:none;font-size:12px;color:var(--warn);margin-top:4px;line-height:1.4"></div>
     </div>
     <button class="btn-modal-submit" id="recovery-submit-btn">Submit</button>
     <div class="recovery-result" id="recovery-result"></div>
@@ -1088,6 +1093,9 @@ const i18n = {
     statsColumns:       '{n} columns removed',
     statsDates:         '{n} dates converted',
     statsPhones:        '{n} phones reformatted',
+    statsEmailsCased:   '{n} emails normalized',
+    statsNamesCased:    '{n} names normalized',
+    progressLabel:      'Processing your file',
     previewNote:        'Showing first 50 rows and changed columns — full file processed on download',
     showAllCols:        'Show all columns',
     alreadyClean:       'Your file looks clean already — no changes detected. You can still download it or adjust settings.',
@@ -1106,6 +1114,7 @@ const i18n = {
     errEmpty:           'This file appears to be empty.',
     warnLargeFile:      'Large file — processing may take a moment. Your browser is doing all the work.',
     warnManyRows:       'This file has {n} rows — we\'ll show a progress bar.',
+    warnMediumRows:     'This file has {n} rows — processing may take a moment.',
     errNoHeaders:       'Couldn\'t detect column headers. Please ensure row 1 is a header row.',
     noticeOneCol:       'Only one column detected — trim and empty row removal will still run.',
     noticeColMissing:   'Couldn\'t detect {col} column — you can skip this rule or adjust settings.',
@@ -1136,7 +1145,9 @@ const i18n = {
     feedbackErrorWithContact: 'Something went wrong — please try again. Or email us at support@cleanlistapp.com',
     errNotCsvWithHelp:  'This doesn\'t appear to be a valid CSV file. If you have an Excel file, open it and export or save as CSV first.',
     summaryNoChanges:   'No changes were made — this file is identical to your original.',
-    errPapaFailed:      'CSV processing library failed to load. Please refresh the page and try again.'
+    errPapaFailed:      'CSV processing library failed to load. Please refresh the page and try again.',
+    recoveryEmailInvalid: 'Please enter a valid email address.',
+    keepSettings:       'Keep my settings for next file'
   }
 };
 i18n.de = { ...i18n.en };
@@ -1311,6 +1322,14 @@ function standardizeDate(val) {
   if (!val) return { out: val, changed: false };
   const s = String(val).trim();
   if (!s) return { out: s, changed: false };
+
+  // ISO 8601 with time component: 2024-03-15T10:30:00Z, 2024-03-15 10:30:00, etc.
+  const isoWithTime = /^(\d{4})-(\d{2})-(\d{2})[T ](\d)/;
+  const isoMatch = s.match(isoWithTime);
+  if (isoMatch) {
+    const out = `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    return { out, changed: out !== s };
+  }
 
   // Already YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { out: s, changed: false };
@@ -1633,13 +1652,18 @@ function showSection(name) {
 }
 
 function setProgress(pct, label) {
-  document.getElementById('progress-fill').style.width = pct + '%';
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = pct + '%';
+  fill.setAttribute('aria-valuenow', Math.round(pct));
   if (label) document.getElementById('progress-label').textContent = label;
   document.getElementById('progress-wrap').style.display = pct < 100 ? 'block' : 'none';
 }
 
 function showOverlay(show) {
   document.getElementById('processing-overlay').style.display = show ? 'flex' : 'none';
+  if (!show) {
+    document.getElementById('processing-text').textContent = '';
+  }
 }
 
 // ── Current settings from toggles ────────────────────────────────
@@ -1768,6 +1792,8 @@ function processCSVText(text, filename) {
 
   if (rows.length > 50000) {
     showMsg('msg-file-warn', fmt(t.warnManyRows, { n: rows.length.toLocaleString() }));
+  } else if (rows.length > 5000) {
+    showMsg('msg-file-warn', fmt(t.warnMediumRows, { n: rows.length.toLocaleString() }));
   }
 
   state.parsedRows = rows;
@@ -1885,12 +1911,16 @@ function renderPreview(hasFuzzy) {
   const colsRemoved = cleanStats.colsRemoved || 0;
   const datesConverted = cleanStats.dates || 0;
   const phonesFormatted = cleanStats.phones || 0;
+  const emailsCased = cleanStats.emailsCased || 0;
+  const namesCased = cleanStats.namesCased || 0;
 
   if (totalDupes) addStat('duplicates removed', totalDupes);
   if (emptyRowsRemoved) addStat('empty rows dropped', emptyRowsRemoved);
   if (colsRemoved) addStat('columns removed', colsRemoved);
   if (datesConverted) addStat('dates converted', datesConverted);
   if (phonesFormatted) addStat('phones reformatted', phonesFormatted);
+  if (emailsCased) addStat('emails normalized', emailsCased);
+  if (namesCased) addStat('names normalized', namesCased);
   if (statsEl.children.length === 0) {
     const none = document.createElement('div');
     none.style.cssText = 'font-size:13px;color:var(--text3);padding:10px 4px';
@@ -2102,7 +2132,8 @@ function downloadCSV() {
       window.location.href = 'win.html?rows=' + rows +
         '&removed=' + removed +
         '&seconds=' + seconds +
-        '&crm=' + encodeURIComponent(state.crmName);
+        '&crm=' + encodeURIComponent(state.crmName) +
+        '&changed=' + (state.isAlreadyClean ? '0' : '1');
     };
     return;
   }
@@ -2121,7 +2152,8 @@ function downloadCSV() {
     window.location.href = 'win.html?rows=' + rows +
       '&removed=' + removed +
       '&seconds=' + seconds +
-      '&crm=' + encodeURIComponent(state.crmName);
+      '&crm=' + encodeURIComponent(state.crmName) +
+      '&changed=' + (state.isAlreadyClean ? '0' : '1');
   }, 1000);
 }
 
@@ -2173,12 +2205,15 @@ async function downloadXLSX() {
     window.location.href = 'win.html?rows=' + rows +
       '&removed=' + removed +
       '&seconds=' + seconds +
-      '&crm=' + encodeURIComponent(state.crmName);
+      '&crm=' + encodeURIComponent(state.crmName) +
+      '&changed=' + (state.isAlreadyClean ? '0' : '1');
   }, 1000);
 }
 
 // ── Clean another file ───────────────────────────────────────────
 function cleanAnother() {
+  const keepSettings = document.getElementById('keep-settings-cb')?.checked;
+
   // Reset all state
   state.parsedRows = [];
   state.parsedHeaders = [];
@@ -2193,9 +2228,11 @@ function cleanAnother() {
   clearMsgs();
   hideMsg('msg-file-info');
 
-  // Reset preset + toggles to defaults
-  document.getElementById('crm-preset').value = 'generic';
-  applyQuickCleanSettings();
+  // Reset preset + toggles to defaults only when not keeping settings
+  if (!keepSettings) {
+    document.getElementById('crm-preset').value = 'generic';
+    applyQuickCleanSettings();
+  }
 
   // Collapse advanced settings
   document.getElementById('advanced-settings').style.display = 'none';
@@ -2215,6 +2252,10 @@ function cleanAnother() {
   xlsxBtn.textContent = t.downloadXlsx;
   document.getElementById('t-excel').checked = false;
   xlsxBtn.style.display = 'none';
+
+  // Reset keep-settings checkbox for next session
+  const ksCheckbox = document.getElementById('keep-settings-cb');
+  if (ksCheckbox) ksCheckbox.checked = false;
 
   showSection('upload');
 }
@@ -2304,6 +2345,8 @@ function populateI18n() {
   document.getElementById('cookie-text').textContent = t.cookieNotice;
   document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
   document.getElementById('adjust-settings-btn').textContent = t.adjustSettings;
+  document.getElementById('progress-fill').setAttribute('aria-label', t.progressLabel);
+  document.getElementById('keep-settings-lbl').textContent = t.keepSettings;
 }
 
 // ── Modal focus management ───────────────────────────────────────
@@ -2313,8 +2356,9 @@ function openModal(overlayEl, triggerEl) {
   overlayEl.style.display = 'flex';
   overlayEl._triggerEl = triggerEl || null;
   const box = overlayEl.querySelector('[role="dialog"]') || overlayEl;
+  const firstField = box.querySelector('input:not([type="hidden"]), select, textarea');
   const focusable = Array.from(box.querySelectorAll(FOCUSABLE));
-  if (focusable.length) focusable[0].focus();
+  (firstField || (focusable.length ? focusable[0] : null))?.focus();
 
   function handleKey(e) {
     if (e.key === 'Escape') {
@@ -2532,7 +2576,15 @@ function bindEvents() {
   });
   document.getElementById('recovery-submit-btn').addEventListener('click', () => {
     const emailVal = document.getElementById('recovery-email-input').value.trim();
+    const emailErrorEl = document.getElementById('recovery-email-error');
+    emailErrorEl.style.display = 'none';
     if (!emailVal) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailVal)) {
+      emailErrorEl.textContent = t.recoveryEmailInvalid;
+      emailErrorEl.style.display = 'block';
+      return;
+    }
     const resultEl = document.getElementById('recovery-result');
     resultEl.style.display = 'block';
     resultEl.textContent = t.recoveryMsg;
