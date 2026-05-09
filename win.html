@@ -348,12 +348,22 @@ function fmt(str, vars) {
   return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
 }
 
-// Parse URL params with fallbacks
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Parse URL params with fallbacks — escapeHTML applied for defense-in-depth
 const params = new URLSearchParams(window.location.search);
-const rows = params.get('rows') || 'your file';
-const removed = params.get('removed') || 'duplicates';
-const seconds = params.get('seconds') || 'seconds';
-const crm = params.get('crm') || 'CSV';
+const rows = escapeHTML(params.get('rows') || 'your file');
+const removed = escapeHTML(params.get('removed') || 'duplicates');
+const seconds = escapeHTML(params.get('seconds') || 'seconds');
+const crm = escapeHTML(params.get('crm') || 'CSV');
 
 // Render headline
 document.getElementById('win-headline').textContent = t.winHeadline;

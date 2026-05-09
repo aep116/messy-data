@@ -347,7 +347,22 @@ body {
   border-bottom: 1px solid var(--border);
 }
 .toggle-row:hover { background: var(--surface2); }
-.toggle-row input[type="checkbox"] { display: none; }
+.toggle-row input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+.toggle-row input[type="checkbox"]:focus-visible + .toggle-switch {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .toggle-switch {
   width: 36px;
   height: 20px;
@@ -811,9 +826,9 @@ select.field-input { appearance: auto; cursor: pointer; }
       <div id="file-info"></div>
 
       <!-- Messages -->
-      <div class="msg msg-err" id="msg-file-err"></div>
-      <div class="msg msg-warn" id="msg-file-warn"></div>
-      <div class="msg msg-info" id="msg-file-info"></div>
+      <div class="msg msg-err" id="msg-file-err" role="alert" aria-live="assertive" aria-atomic="true"></div>
+      <div class="msg msg-warn" id="msg-file-warn" aria-live="polite" aria-atomic="true"></div>
+      <div class="msg msg-info" id="msg-file-info" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Quick Clean area -->
       <div id="quick-clean-area">
@@ -947,7 +962,7 @@ select.field-input { appearance: auto; cursor: pointer; }
     <!-- ── Download section ────────────────────────────────────── -->
     <div id="download-section">
       <div class="dl-summary" id="dl-summary"></div>
-      <div class="msg msg-warn" id="msg-all-rows-removed" style="display:none"></div>
+      <div class="msg msg-warn" id="msg-all-rows-removed" aria-live="polite" aria-atomic="true" style="display:none"></div>
 
       <button class="btn-dl-csv" id="dl-csv-btn"></button>
 
@@ -987,7 +1002,7 @@ select.field-input { appearance: auto; cursor: pointer; }
 
 <!-- ── Recovery modal ────────────────────────────────────────────── -->
 <div class="modal-overlay" id="recovery-modal" style="display:none">
-  <div class="modal-box">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="recovery-title">
     <button class="modal-close" id="recovery-close">✕</button>
     <div class="modal-title" id="recovery-title"></div>
     <div class="field-row">
@@ -1002,7 +1017,7 @@ select.field-input { appearance: auto; cursor: pointer; }
 
 <!-- ── Feedback modal ─────────────────────────────────────────────── -->
 <div class="modal-overlay" id="feedback-modal" style="display:none">
-  <div class="modal-box">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
     <button class="modal-close" id="feedback-close">✕</button>
     <div class="modal-title" id="feedback-title"></div>
     <div class="field-row">
@@ -1120,7 +1135,8 @@ const i18n = {
     feedbackMinChars:   'Minimum 10 characters',
     feedbackErrorWithContact: 'Something went wrong — please try again. Or email us at support@cleanlistapp.com',
     errNotCsvWithHelp:  'This doesn\'t appear to be a valid CSV file. If you have an Excel file, open it and export or save as CSV first.',
-    summaryNoChanges:   'No changes were made — this file is identical to your original.'
+    summaryNoChanges:   'No changes were made — this file is identical to your original.',
+    errPapaFailed:      'CSV processing library failed to load. Please refresh the page and try again.'
   }
 };
 i18n.de = { ...i18n.en };
@@ -1137,6 +1153,16 @@ const t = i18n[LANG];
 
 function fmt(str, vars) {
   return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
+}
+
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ── Column detection maps (EQUALS-ONLY, case-insensitive) ────────
@@ -1397,7 +1423,7 @@ function runFuzzyDedup(rows, headers, colIdx, threshold) {
 
 /* ── Main cleaning function ─────────────────────────────────────── */
 function cleanData(rawRows, rawHeaders, settings) {
-  const stats = { dupes: 0, emptyRows: 0, colsRemoved: 0, dates: 0, phones: 0, dupHeaders: 0 };
+  const stats = { dupes: 0, emptyRows: 0, colsRemoved: 0, dates: 0, phones: 0, dupHeaders: 0, emailsCased: 0, namesCased: 0 };
   let headers = [...rawHeaders];
   let rows = rawRows.map(r => ({ ...r }));
 
@@ -1488,7 +1514,11 @@ function cleanData(rawRows, rawHeaders, settings) {
     const emailCol = headers[colIdx.email];
     rows = rows.map(row => {
       const r = { ...row };
-      if (r[emailCol]) r[emailCol] = String(r[emailCol]).toLowerCase();
+      if (r[emailCol]) {
+        const orig = String(r[emailCol]);
+        r[emailCol] = orig.toLowerCase();
+        if (r[emailCol] !== orig) stats.emailsCased++;
+      }
       return r;
     });
   }
@@ -1501,7 +1531,13 @@ function cleanData(rawRows, rawHeaders, settings) {
     if (nameCols.length > 0) {
       rows = rows.map(row => {
         const r = { ...row };
-        nameCols.forEach(col => { if (r[col]) r[col] = titleCase(String(r[col])); });
+        nameCols.forEach(col => {
+          if (r[col]) {
+            const orig = String(r[col]);
+            r[col] = titleCase(orig);
+            if (r[col] !== orig) stats.namesCased++;
+          }
+        });
         return r;
       });
     }
@@ -1665,7 +1701,7 @@ function handleFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   const ok = ext === 'csv' || file.type === 'text/csv' || file.type === 'text/plain';
   if (!ok) {
-    showMsg('msg-file-err', t.errNotCsv);
+    showMsg('msg-file-err', t.errNotCsvWithHelp);
     resetFileInput();
     return;
   }
@@ -1693,6 +1729,11 @@ function handlePasteLoad() {
 
 function processCSVText(text, filename) {
   if (!text.trim()) { showMsg('msg-file-err', t.errEmpty); return; }
+
+  if (typeof Papa === 'undefined') {
+    showMsg('msg-file-err', t.errPapaFailed);
+    return;
+  }
 
   const result = Papa.parse(text, {
     header: true,
@@ -1732,9 +1773,21 @@ function processCSVText(text, filename) {
   state.parsedRows = rows;
   state.parsedHeaders = headers;
 
+  // If fuzzy toggle was already checked before this file loaded, show cap notice retroactively
+  const fuzzyToggle = document.getElementById('t-fuzzy');
+  const fuzzyCapNotice = document.getElementById('fuzzy-cap-notice');
+  if (fuzzyToggle && fuzzyCapNotice) {
+    if (fuzzyToggle.checked && rows.length > 10000) {
+      fuzzyCapNotice.textContent = fmt(t.fuzzyCapWarning, { n: rows.length.toLocaleString() });
+      fuzzyCapNotice.style.display = 'block';
+    } else {
+      fuzzyCapNotice.style.display = 'none';
+    }
+  }
+
   // Show file info
   const infoEl = document.getElementById('file-info');
-  infoEl.innerHTML = `<span>${filename}</span> — ${rows.length.toLocaleString()} rows, ${headers.length} columns`;
+  infoEl.innerHTML = `<span>${escapeHTML(filename)}</span> — ${rows.length.toLocaleString()} rows, ${headers.length} columns`;
   infoEl.style.display = 'block';
 
   // Show Quick Clean area
@@ -1939,8 +1992,8 @@ function renderFuzzyConfirm(pairs) {
       <input type="checkbox" id="fp-${pi}" data-pair="${pi}" checked>
       <div class="fuzzy-pair-text">
         <label for="fp-${pi}">
-          <strong>${pair.a}</strong><br>
-          <span style="color:var(--text3)">vs</span> ${pair.b}
+          <strong>${escapeHTML(pair.a)}</strong><br>
+          <span style="color:var(--text3)">vs</span> ${escapeHTML(pair.b)}
         </label>
       </div>
       <span class="fuzzy-pair-score">${pair.sim}% match</span>
@@ -1977,7 +2030,9 @@ function showDownload() {
 
   const isAlreadyClean = clean === orig &&
     !state.cleanStats.dupes && !state.cleanStats.emptyRows &&
-    !state.cleanStats.colsRemoved && !state.cleanStats.dates && !state.cleanStats.phones;
+    !state.cleanStats.colsRemoved && !state.cleanStats.dates && !state.cleanStats.phones &&
+    !state.cleanStats.emailsCased && !state.cleanStats.namesCased;
+  state.isAlreadyClean = isAlreadyClean;
 
   let summaryText = fmt(t.summaryLine, {
     orig: orig.toLocaleString(),
@@ -2023,9 +2078,7 @@ function downloadCSV() {
   // Filename sanitization
   const baseName = originalFilename.replace(/\.[^.]+$/, '');
   const safe = baseName.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const isAlreadyClean = state.cleanedRows.length === state.parsedRows.length &&
-    !state.cleanStats.dupes && !state.cleanStats.emptyRows &&
-    !state.cleanStats.colsRemoved && !state.cleanStats.dates && !state.cleanStats.phones;
+  const isAlreadyClean = state.isAlreadyClean;
   const suffix = isAlreadyClean ? '-verified' : '-cleaned';
   const filename = (safe || 'file') + suffix + '.csv';
 
@@ -2107,7 +2160,8 @@ async function downloadXLSX() {
 
   const baseName = originalFilename.replace(/\.[^.]+$/, '');
   const safe = baseName.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const filename = (safe || 'file') + '-cleaned.xlsx';
+  const xlsxSuffix = state.isAlreadyClean ? '-verified' : '-cleaned';
+  const filename = (safe || 'file') + xlsxSuffix + '.xlsx';
 
   XLSX.writeFile(wb, filename);
   btn.disabled = false;
@@ -2148,9 +2202,19 @@ function cleanAnother() {
   document.getElementById('adv-chevron').classList.remove('open');
   document.getElementById('adv-toggle-row').setAttribute('aria-expanded', 'false');
 
-  // Reset Excel toggle
+  // Reset CSV download button and iOS save area
+  document.getElementById('dl-csv-btn').style.display = '';
+  const iosArea = document.getElementById('ios-save-area');
+  if (iosArea) iosArea.style.display = 'none';
+
+  // Reset Excel toggle and any prior XLSX error
+  const xlsxErr = document.getElementById('xlsx-error');
+  if (xlsxErr) xlsxErr.style.display = 'none';
+  const xlsxBtn = document.getElementById('dl-xlsx-btn');
+  xlsxBtn.disabled = false;
+  xlsxBtn.textContent = t.downloadXlsx;
   document.getElementById('t-excel').checked = false;
-  document.getElementById('dl-xlsx-btn').style.display = 'none';
+  xlsxBtn.style.display = 'none';
 
   showSection('upload');
 }
@@ -2240,6 +2304,48 @@ function populateI18n() {
   document.getElementById('cookie-text').textContent = t.cookieNotice;
   document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
   document.getElementById('adjust-settings-btn').textContent = t.adjustSettings;
+}
+
+// ── Modal focus management ───────────────────────────────────────
+const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+
+function openModal(overlayEl, triggerEl) {
+  overlayEl.style.display = 'flex';
+  overlayEl._triggerEl = triggerEl || null;
+  const box = overlayEl.querySelector('[role="dialog"]') || overlayEl;
+  const focusable = Array.from(box.querySelectorAll(FOCUSABLE));
+  if (focusable.length) focusable[0].focus();
+
+  function handleKey(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeModal(overlayEl);
+    } else if (e.key === 'Tab') {
+      const els = Array.from(box.querySelectorAll(FOCUSABLE));
+      if (!els.length) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+  }
+  overlayEl.addEventListener('keydown', handleKey);
+  overlayEl._keyHandler = handleKey;
+}
+
+function closeModal(overlayEl) {
+  overlayEl.style.display = 'none';
+  if (overlayEl._keyHandler) {
+    overlayEl.removeEventListener('keydown', overlayEl._keyHandler);
+    overlayEl._keyHandler = null;
+  }
+  if (overlayEl._triggerEl) {
+    overlayEl._triggerEl.focus();
+    overlayEl._triggerEl = null;
+  }
 }
 
 // ── Event wiring ─────────────────────────────────────────────────
@@ -2412,17 +2518,16 @@ function bindEvents() {
 
   // Already paid
   document.getElementById('already-paid-btn').addEventListener('click', () => {
-    document.getElementById('recovery-modal').style.display = 'flex';
-    document.getElementById('recovery-email-input').focus();
+    openModal(document.getElementById('recovery-modal'), document.getElementById('already-paid-btn'));
   });
 
   // Recovery modal
   document.getElementById('recovery-close').addEventListener('click', () => {
-    document.getElementById('recovery-modal').style.display = 'none';
+    closeModal(document.getElementById('recovery-modal'));
   });
   document.getElementById('recovery-modal').addEventListener('click', e => {
     if (e.target === document.getElementById('recovery-modal')) {
-      document.getElementById('recovery-modal').style.display = 'none';
+      closeModal(document.getElementById('recovery-modal'));
     }
   });
   document.getElementById('recovery-submit-btn').addEventListener('click', () => {
@@ -2435,16 +2540,16 @@ function bindEvents() {
 
   // Feedback button
   document.getElementById('feedback-btn').addEventListener('click', () => {
-    document.getElementById('feedback-modal').style.display = 'flex';
+    openModal(document.getElementById('feedback-modal'), document.getElementById('feedback-btn'));
   });
 
   // Feedback modal close
   document.getElementById('feedback-close').addEventListener('click', () => {
-    document.getElementById('feedback-modal').style.display = 'none';
+    closeModal(document.getElementById('feedback-modal'));
   });
   document.getElementById('feedback-modal').addEventListener('click', e => {
     if (e.target === document.getElementById('feedback-modal')) {
-      document.getElementById('feedback-modal').style.display = 'none';
+      closeModal(document.getElementById('feedback-modal'));
     }
   });
 
@@ -2488,7 +2593,7 @@ function bindEvents() {
         msgResult.className = 'modal-msg success';
         msgResult.style.display = 'block';
         setTimeout(() => {
-          document.getElementById('feedback-modal').style.display = 'none';
+          closeModal(document.getElementById('feedback-modal'));
           // Reset form
           document.getElementById('fb-type').value = '';
           document.getElementById('fb-msg').value = '';
