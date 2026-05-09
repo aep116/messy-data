@@ -290,12 +290,13 @@ body {
       <div class="card-url" id="card-url"></div>
     </div>
     <button class="btn-download" id="download-card-btn"></button>
+    <div id="card-download-error" style="display:none;font-size:12px;color:var(--warn);margin-top:8px;line-height:1.4"></div>
   </div>
 
   <!-- X post -->
   <div class="x-section">
     <div class="x-label">Post on X</div>
-    <textarea id="x-text" readonly></textarea>
+    <textarea id="x-text"></textarea>
     <div class="x-counter" id="x-counter">0/280</div>
     <button class="btn-primary" id="post-x-btn" style="margin-top:12px;margin-bottom:0"></button>
   </div>
@@ -324,8 +325,11 @@ const i18n = {
     winCleanAnother: 'Clean another file',
     winSkip: 'Skip',
     winCharCount: '{n}/280',
-    cookieNotice: 'This site uses cookies for payment processing only. No tracking.',
-    cookieDismiss: 'Got it'
+    cookieNotice: 'This site uses browser storage for payment access only. No tracking.',
+    cookieDismiss: 'Got it',
+    cardDownloadError: 'Card download failed. Check your connection and try again.',
+    cardAlreadyClean: 'Already clean — no duplicates found.',
+    winXTextClean: 'Just ran CleanList on a {rows}-row {crm} export.\nAlready clean — zero duplicates found.\nNothing uploaded. No account. $39 one-time.\n\ncleanlistapp.com'
   }
 };
 i18n.de = { ...i18n.en };
@@ -363,11 +367,17 @@ document.getElementById('stat-time').textContent = seconds + 's';
 document.getElementById('stat-time-lbl').textContent = 'processing time';
 
 // Stats card
+const isAlreadyClean = removed === '0';
 document.getElementById('card-brand').textContent = t.winCardBrand;
 document.getElementById('card-rows').textContent = rows;
 document.getElementById('card-rows-lbl').textContent = crm + ' rows cleaned';
-document.getElementById('card-removed').textContent = removed;
-document.getElementById('card-removed-lbl').textContent = 'duplicates removed';
+if (isAlreadyClean) {
+  document.getElementById('card-removed').textContent = '';
+  document.getElementById('card-removed-lbl').textContent = t.cardAlreadyClean;
+} else {
+  document.getElementById('card-removed').textContent = removed;
+  document.getElementById('card-removed-lbl').textContent = 'duplicates removed';
+}
 document.getElementById('card-time').textContent = seconds + 's';
 document.getElementById('card-time-lbl').textContent = 'processing time';
 document.getElementById('card-url').textContent = t.winCardUrl;
@@ -378,8 +388,10 @@ document.getElementById('post-x-btn').textContent = t.winPostX;
 document.getElementById('clean-another-btn').textContent = t.winCleanAnother;
 document.getElementById('skip-btn').textContent = t.winSkip;
 
-// X post text
-const xText = fmt(t.winXText, { rows, crm, seconds, removed });
+// X post text — use clean-variant template when removed=0
+const xText = isAlreadyClean
+  ? fmt(t.winXTextClean, { rows, crm, seconds })
+  : fmt(t.winXText, { rows, crm, seconds, removed });
 const xTextEl = document.getElementById('x-text');
 xTextEl.value = xText;
 
@@ -402,12 +414,27 @@ document.getElementById('post-x-btn').addEventListener('click', () => {
 
 // Download card
 document.getElementById('download-card-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('download-card-btn');
+  const errEl = document.getElementById('card-download-error');
   const card = document.getElementById('stats-card');
+  btn.disabled = true;
+  errEl.style.display = 'none';
   try {
+    // Ensure fonts are loaded in the main document before cloning
+    await document.fonts.ready;
+    const loadedFonts = [...document.fonts].filter(f => f.status === 'loaded');
+
     const canvas = await html2canvas(card, {
       backgroundColor: '#0b1120',
       scale: 2,
-      logging: false
+      logging: false,
+      onclone: (clonedDoc) => {
+        // Copy loaded FontFace objects into cloned document so html2canvas
+        // can render them without cross-origin font re-fetch
+        loadedFonts.forEach(font => {
+          try { clonedDoc.fonts.add(font); } catch (e) {}
+        });
+      }
     });
     const link = document.createElement('a');
     link.download = 'cleanlist-stats.png';
@@ -415,6 +442,10 @@ document.getElementById('download-card-btn').addEventListener('click', async () 
     link.click();
   } catch (e) {
     console.error('Card download failed:', e);
+    errEl.textContent = t.cardDownloadError;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
   }
 });
 

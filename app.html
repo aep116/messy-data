@@ -789,6 +789,7 @@ select.field-input { appearance: auto; cursor: pointer; }
 
 <!-- ── TOOL VIEW ────────────────────────────────────────────────── -->
 <div id="tool-view" style="display:none">
+  <div id="purchased-badge" style="display:none;position:fixed;top:12px;right:16px;background:var(--surface2);border:1px solid var(--border);color:var(--success);font-size:11px;font-weight:600;padding:4px 10px;letter-spacing:0.04em;z-index:50"></div>
   <div class="container">
 
     <!-- ── Upload section ──────────────────────────────────────── -->
@@ -895,6 +896,7 @@ select.field-input { appearance: auto; cursor: pointer; }
               <span class="toggle-switch"></span>
               <span class="toggle-lbl">Fuzzy deduplicate (name+company) — 10k row max</span>
             </label>
+            <div id="fuzzy-cap-notice" style="display:none;font-size:12px;color:var(--warn);padding:6px 0 0 4px;line-height:1.4"></div>
           </div>
 
           <button class="btn-clean-settings" id="clean-settings-btn"></button>
@@ -945,8 +947,16 @@ select.field-input { appearance: auto; cursor: pointer; }
     <!-- ── Download section ────────────────────────────────────── -->
     <div id="download-section">
       <div class="dl-summary" id="dl-summary"></div>
+      <div class="msg msg-warn" id="msg-all-rows-removed" style="display:none"></div>
 
       <button class="btn-dl-csv" id="dl-csv-btn"></button>
+
+      <!-- iOS Safari fallback (shown instead of auto-download) -->
+      <div id="ios-save-area" style="display:none">
+        <p id="ios-save-instruction" style="font-size:14px;color:var(--text2);margin-bottom:12px;line-height:1.5"></p>
+        <a id="ios-save-link" target="_blank" style="display:block;color:var(--accent);font-size:15px;font-weight:600;margin-bottom:16px;word-break:break-all"></a>
+        <button class="btn-dl-csv" id="ios-continue-btn"></button>
+      </div>
 
       <div class="excel-row">
         <label class="toggle-row" style="border:none;padding:0;flex:1">
@@ -956,6 +966,7 @@ select.field-input { appearance: auto; cursor: pointer; }
         </label>
         <button class="btn-dl-xlsx" id="dl-xlsx-btn"></button>
       </div>
+      <div class="msg msg-err" id="xlsx-error" style="display:none"></div>
 
       <button class="btn-clean-another" id="clean-another-btn"></button>
     </div><!-- /download-section -->
@@ -985,6 +996,7 @@ select.field-input { appearance: auto; cursor: pointer; }
     </div>
     <button class="btn-modal-submit" id="recovery-submit-btn">Submit</button>
     <div class="recovery-result" id="recovery-result"></div>
+    <p style="font-size:12px;color:var(--text3);margin-top:12px;line-height:1.5">Can't find your receipt? Email <a href="mailto:support@cleanlistapp.com" style="color:var(--accent)">support@cleanlistapp.com</a> with your order confirmation.</p>
   </div>
 </div>
 
@@ -1005,7 +1017,10 @@ select.field-input { appearance: auto; cursor: pointer; }
     <div class="field-row">
       <label class="field-lbl" id="fb-msg-lbl"></label>
       <textarea class="field-input" id="fb-msg" maxlength="500"></textarea>
-      <div class="char-hint" id="fb-char-hint">0/500</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
+        <span id="fb-min-hint" style="font-size:11px;color:var(--text3)"></span>
+        <div class="char-hint" id="fb-char-hint">0/500</div>
+      </div>
     </div>
     <div class="field-row">
       <label class="field-lbl" id="fb-email-lbl"></label>
@@ -1032,7 +1047,7 @@ const STORAGE_KEY        = 'cleanlist_v1_order_id';
 const i18n = {
   en: {
     privacyBanner:      'Your data never leaves your browser — whether uploaded or pasted. All processing happens locally.',
-    cookieNotice:       'This site uses cookies for payment processing only. No tracking.',
+    cookieNotice:       'This site uses browser storage for payment access only. No tracking.',
     cookieDismiss:      'Got it',
     lockedHeadline:     'CleanList',
     lockedSubhead:      'Clean your CSV in seconds. Nothing uploaded. No account.',
@@ -1092,8 +1107,20 @@ const i18n = {
     feedbackError:      'Something went wrong — please try again.',
     recoveryTitle:      'Restore Access',
     recoveryEmailLbl:   'Order email address',
-    recoveryMsg:        'Check your email — Lemon Squeezy sent a receipt with your access link.',
-    recoveryFallback:   'Can\'t find your receipt? Email support@cleanlistapp.com with your order confirmation.'
+    recoveryMsg:        'We don\'t store accounts, so we can\'t look you up automatically. Check your inbox for a receipt from Lemon Squeezy — it contains your access link. If you can\'t find it, email support@cleanlistapp.com with your order confirmation.',
+    iosSaveInstruction: 'Your file is ready. Tap and hold the link below and choose Save to Files.',
+    iosContinueBtn:     'I\'ve saved it — Continue',
+    fuzzyCapWarning:    'This file has {n} rows. Fuzzy matching applies to the first 10,000 rows only.',
+    xlsxLoadError:      'Excel download failed. Try CSV instead, or check your connection and try again.',
+    purchasedBadge:     'Purchased',
+    warnAllRowsRemoved: 'All rows were removed by the current settings. Your download will contain headers only. Go back and adjust settings if this is unexpected.',
+    showChangedOnly:    'Show changed only',
+    statsNoneDetected:  'No changes detected — your file looks clean.',
+    cardDownloadError:  'Card download failed. Check your connection and try again.',
+    feedbackMinChars:   'Minimum 10 characters',
+    feedbackErrorWithContact: 'Something went wrong — please try again. Or email us at support@cleanlistapp.com',
+    errNotCsvWithHelp:  'This doesn\'t appear to be a valid CSV file. If you have an Excel file, open it and export or save as CSV first.',
+    summaryNoChanges:   'No changes were made — this file is identical to your original.'
   }
 };
 i18n.de = { ...i18n.en };
@@ -1649,11 +1676,8 @@ function handleFile(file) {
 
   state.originalFilename = file.name;
 
-  if (file.size > 5 * 1024 * 1024) showOverlay(true);
-
   const reader = new FileReader();
   reader.onload = e => {
-    showOverlay(false);
     processCSVText(e.target.result, file.name);
   };
   reader.readAsText(file, 'UTF-8');
@@ -1678,7 +1702,7 @@ function processCSVText(text, filename) {
   });
 
   if (result.errors && result.errors.length > 0 && result.data.length === 0) {
-    showMsg('msg-file-err', t.errNotCsv);
+    showMsg('msg-file-err', t.errNotCsvWithHelp);
     resetFileInput();
     return;
   }
@@ -1814,6 +1838,12 @@ function renderPreview(hasFuzzy) {
   if (colsRemoved) addStat('columns removed', colsRemoved);
   if (datesConverted) addStat('dates converted', datesConverted);
   if (phonesFormatted) addStat('phones reformatted', phonesFormatted);
+  if (statsEl.children.length === 0) {
+    const none = document.createElement('div');
+    none.style.cssText = 'font-size:13px;color:var(--text3);padding:10px 4px';
+    none.textContent = t_.statsNoneDetected;
+    statsEl.appendChild(none);
+  }
 
   // Detect changed columns (between original first 50 rows and cleaned first 50)
   const preview50orig = parsedRows.slice(0, 50);
@@ -1884,7 +1914,7 @@ function renderPreview(hasFuzzy) {
 
   // Show all toggle
   const showAllBtn = document.getElementById('show-all-btn');
-  showAllBtn.textContent = state.showAllCols ? 'Show changed only' : t_.showAllCols;
+  showAllBtn.textContent = state.showAllCols ? t_.showChangedOnly : t_.showAllCols;
   document.getElementById('preview-note-text').textContent = t_.previewNote;
 
   document.getElementById('process-btn').textContent = t_.processBtn;
@@ -1945,22 +1975,43 @@ function showDownload() {
   const clean = state.cleanedRows.length;
   const removed = orig - clean;
 
-  const summary = fmt(t.summaryLine, {
+  const isAlreadyClean = clean === orig &&
+    !state.cleanStats.dupes && !state.cleanStats.emptyRows &&
+    !state.cleanStats.colsRemoved && !state.cleanStats.dates && !state.cleanStats.phones;
+
+  let summaryText = fmt(t.summaryLine, {
     orig: orig.toLocaleString(),
     clean: clean.toLocaleString(),
     removed: removed.toLocaleString(),
     sec
   });
-  document.getElementById('dl-summary').innerHTML = summary;
+  if (isAlreadyClean) summaryText += ' — ' + t.summaryNoChanges;
+
+  document.getElementById('dl-summary').innerHTML = summaryText;
   document.getElementById('dl-csv-btn').textContent = t.downloadCsv;
   document.getElementById('excel-toggle-lbl').textContent = t.downloadXlsx;
   document.getElementById('dl-xlsx-btn').textContent = t.downloadXlsx;
   document.getElementById('clean-another-btn').textContent = t.cleanAnother;
 
+  const allRemovedEl = document.getElementById('msg-all-rows-removed');
+  if (clean === 0) {
+    allRemovedEl.textContent = t.warnAllRowsRemoved;
+    allRemovedEl.style.display = 'block';
+  } else {
+    allRemovedEl.style.display = 'none';
+  }
+
   showSection('download');
 
   // Store for win redirect
   state.finalStats = { rows: clean, removed, seconds: sec };
+}
+
+// ── iOS Safari detection ─────────────────────────────────────────
+function isIOSSafari() {
+  return /iP(ad|hone|od)/i.test(navigator.userAgent) &&
+         /WebKit/i.test(navigator.userAgent) &&
+         !/CriOS|FxiOS|OPiOS|mercury/i.test(navigator.userAgent);
 }
 
 // ── CSV download ─────────────────────────────────────────────────
@@ -1972,43 +2023,80 @@ function downloadCSV() {
   // Filename sanitization
   const baseName = originalFilename.replace(/\.[^.]+$/, '');
   const safe = baseName.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  const filename = (safe || 'file') + '-cleaned.csv';
+  const isAlreadyClean = state.cleanedRows.length === state.parsedRows.length &&
+    !state.cleanStats.dupes && !state.cleanStats.emptyRows &&
+    !state.cleanStats.colsRemoved && !state.cleanStats.dates && !state.cleanStats.phones;
+  const suffix = isAlreadyClean ? '-verified' : '-cleaned';
+  const filename = (safe || 'file') + suffix + '.csv';
 
-  const url = URL.createObjectURL(blob);
+  const blobUrl = URL.createObjectURL(blob);
+
+  if (isIOSSafari()) {
+    // iOS Safari: cannot reliably download blob URLs via a.download
+    // Show a tap-and-hold link + manual Continue button instead
+    document.getElementById('dl-csv-btn').style.display = 'none';
+    const saveArea = document.getElementById('ios-save-area');
+    const saveLink = document.getElementById('ios-save-link');
+    saveArea.style.display = 'block';
+    document.getElementById('ios-save-instruction').textContent = t.iosSaveInstruction;
+    saveLink.href = blobUrl;
+    saveLink.textContent = filename;
+    document.getElementById('ios-continue-btn').textContent = t.iosContinueBtn;
+    // win.html redirect fires only when user taps Continue
+    document.getElementById('ios-continue-btn').onclick = () => {
+      URL.revokeObjectURL(blobUrl);
+      const { rows, removed, seconds } = state.finalStats;
+      window.location.href = 'win.html?rows=' + rows +
+        '&removed=' + removed +
+        '&seconds=' + seconds +
+        '&crm=' + encodeURIComponent(state.crmName);
+    };
+    return;
+  }
+
   const a = document.createElement('a');
-  a.href = url;
+  a.href = blobUrl;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
 
   // Redirect to win.html after 1 second
   const { rows, removed, seconds } = state.finalStats;
-  const crmName = state.crmName;
   setTimeout(() => {
     window.location.href = 'win.html?rows=' + rows +
       '&removed=' + removed +
       '&seconds=' + seconds +
-      '&crm=' + encodeURIComponent(crmName);
+      '&crm=' + encodeURIComponent(state.crmName);
   }, 1000);
 }
 
 // ── Excel download (lazy SheetJS) ────────────────────────────────
 async function downloadXLSX() {
   const btn = document.getElementById('dl-xlsx-btn');
+  const errEl = document.getElementById('xlsx-error');
   btn.disabled = true;
   btn.textContent = 'Loading...';
+  errEl.style.display = 'none';
 
   if (!state.xlsxLoaded) {
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-    state.xlsxLoaded = true;
+    try {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+      state.xlsxLoaded = true;
+    } catch {
+      errEl.textContent = t.xlsxLoadError;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = t.downloadXlsx;
+      return;
+    }
   }
 
   const { cleanedRows, cleanedHeaders, originalFilename } = state;
@@ -2103,6 +2191,9 @@ function unlockTool() {
   document.getElementById('locked-view').style.display = 'none';
   document.getElementById('tool-view').style.display = 'block';
   document.getElementById('feedback-btn').style.display = 'block';
+  const badge = document.getElementById('purchased-badge');
+  badge.textContent = t.purchasedBadge;
+  badge.style.display = 'block';
 }
 
 function showLocked() {
@@ -2143,6 +2234,7 @@ function populateI18n() {
   document.getElementById('fb-msg-lbl').textContent = t.feedbackMsgLbl;
   document.getElementById('fb-email-lbl').textContent = t.feedbackEmailLbl;
   document.getElementById('fb-submit-btn').textContent = t.feedbackSubmit;
+  document.getElementById('fb-min-hint').textContent = t.feedbackMinChars;
   document.getElementById('recovery-title').textContent = t.recoveryTitle;
   document.getElementById('recovery-email-lbl').textContent = t.recoveryEmailLbl;
   document.getElementById('cookie-text').textContent = t.cookieNotice;
@@ -2227,6 +2319,17 @@ function bindEvents() {
   // Preset change
   document.getElementById('crm-preset').addEventListener('change', e => {
     applyPreset(e.target.value);
+  });
+
+  // Fuzzy toggle — show upfront cap warning for large files
+  document.getElementById('t-fuzzy').addEventListener('change', e => {
+    const notice = document.getElementById('fuzzy-cap-notice');
+    if (e.target.checked && state.parsedRows.length > 10000) {
+      notice.textContent = fmt(t.fuzzyCapWarning, { n: state.parsedRows.length.toLocaleString() });
+      notice.style.display = 'block';
+    } else {
+      notice.style.display = 'none';
+    }
   });
 
   // Clean with settings
@@ -2327,10 +2430,7 @@ function bindEvents() {
     if (!emailVal) return;
     const resultEl = document.getElementById('recovery-result');
     resultEl.style.display = 'block';
-    resultEl.innerHTML = `
-      <p>${t.recoveryMsg}</p>
-      <p class="recovery-fallback">${t.recoveryFallback}</p>
-    `;
+    resultEl.textContent = t.recoveryMsg;
   });
 
   // Feedback button
@@ -2401,7 +2501,7 @@ function bindEvents() {
         throw new Error('Non-OK response');
       }
     } catch {
-      msgResult.textContent = t.feedbackError;
+      msgResult.textContent = t.feedbackErrorWithContact;
       msgResult.className = 'modal-msg error';
       msgResult.style.display = 'block';
       btn.disabled = false;
