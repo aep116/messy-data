@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CleanList — Clean your CSV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fast-levenshtein@3.0.0/levenshtein.js"></script>
+<style>
+:root {
+  --bg: #0b1120;
+  --surface: #131f2e;
+  --surface2: #1a2840;
+  --surface3: #223050;
+  --border: #2a3a52;
+  --border2: #3a4f6a;
+  --text: #dce8f5;
+  --text2: #90a8c4;
+  --text3: #58789a;
+  --accent: #4e87f5;
+  --accent2: #2345c5;
+  --success: #2dd4a2;
+  --success-bg: #0d2e26;
+  --warn: #f59e0b;
+  --warn-bg: #2a1f08;
+  --err: #f56565;
+  --err-bg: #2a1010;
+  --info: #60a5fa;
+  --info-bg: #0d1e35;
+  --cta: linear-gradient(135deg, #4e87f5 0%, #2345c5 100%);
+  --font: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Layout ────────────────────────────────────────────────────── */
+.container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+
+/* ── Privacy banner ─────────────────────────────────────────────── */
+#privacy-banner {
+  background: var(--info-bg);
+  border-bottom: 1px solid #1a3a5c;
+  padding: 10px 24px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--info);
+}
+
+/* ── Cookie notice ──────────────────────────────────────────────── */
+#cookie-notice {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text2);
+  z-index: 200;
+}
+#cookie-dismiss {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ── Payment banner ─────────────────────────────────────────────── */
+#payment-banner {
+  background: var(--success-bg);
+  border-bottom: 1px solid #0f4a38;
+  padding: 12px 24px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--success);
+}
+
+/* ── Locked view ────────────────────────────────────────────────── */
+#locked-view {
+  min-height: calc(100vh - 42px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+.locked-card {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+.locked-headline {
+  font-size: 40px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.locked-sub {
+  color: var(--text2);
+  font-size: 16px;
+  margin-bottom: 32px;
+  line-height: 1.5;
+}
+.btn-cta {
+  display: block;
+  width: 100%;
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 16px;
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
+  margin-bottom: 16px;
+  letter-spacing: 0.01em;
+}
+.btn-cta:hover { opacity: 0.92; }
+.already-paid-link {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-family: var(--font);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px;
+}
+.already-paid-link:hover { color: var(--text); }
+
+/* ── Tool view ──────────────────────────────────────────────────── */
+#tool-view { padding: 32px 0 100px; }
+
+/* ── Upload section ─────────────────────────────────────────────── */
+#upload-section { }
+
+/* Drop zone */
+#drop-zone {
+  border: 2px dashed var(--border2);
+  background: var(--surface);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 16px;
+}
+#drop-zone.dragover {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+#drop-zone p {
+  color: var(--text2);
+  font-size: 16px;
+  pointer-events: none;
+}
+@media (max-width: 767px) { #drop-zone { display: none; } }
+
+.file-btn-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.btn-select-file {
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn-select-file:hover { opacity: 0.9; }
+.btn-paste-toggle {
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  font-family: var(--font);
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.btn-paste-toggle:hover { border-color: var(--border2); color: var(--text); }
+
+#paste-area {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 14px;
+  resize: vertical;
+  min-height: 120px;
+  margin-bottom: 12px;
+  display: none;
+}
+#paste-area::placeholder { color: var(--text3); }
+
+/* File info */
+#file-info {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 12px;
+  display: none;
+  font-family: var(--mono);
+}
+#file-info span { color: var(--text); font-weight: 500; }
+
+/* Messages */
+.msg {
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 10px;
+  display: none;
+}
+.msg-err { background: var(--err-bg); border: 1px solid #4a1a1a; color: var(--err); }
+.msg-warn { background: var(--warn-bg); border: 1px solid #4a3208; color: var(--warn); }
+.msg-info { background: var(--info-bg); border: 1px solid #1a3a5c; color: var(--info); }
+.msg-success { background: var(--success-bg); border: 1px solid #0f3a2a; color: var(--success); }
+
+/* ── Quick Clean area ───────────────────────────────────────────── */
+#quick-clean-area {
+  margin-top: 24px;
+  display: none;
+}
+#quick-clean-btn {
+  width: 100%;
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 18px;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  margin-bottom: 6px;
+}
+#quick-clean-btn:hover { opacity: 0.92; }
+.quick-clean-sub {
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+/* ── Advanced settings ──────────────────────────────────────────── */
+.adv-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 14px;
+  padding: 8px 0;
+  user-select: none;
+}
+.adv-toggle-row:hover { color: var(--text); }
+.adv-chevron {
+  font-size: 10px;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.adv-chevron.open { transform: rotate(180deg); }
+
+#advanced-settings {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-top: 8px;
+  display: none;
+}
+.adv-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+  margin-top: 20px;
+}
+.adv-section-label:first-child { margin-top: 0; }
+
+/* Preset dropdown */
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.preset-lbl { font-size: 14px; color: var(--text2); white-space: nowrap; }
+#crm-preset {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 8px 12px;
+  cursor: pointer;
+  flex: 1;
+  min-height: 40px;
+  appearance: auto;
+}
+
+/* Toggle switches */
+.toggles-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+@media (max-width: 640px) { .toggles-grid { grid-template-columns: 1fr; } }
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.toggle-row:hover { background: var(--surface2); }
+.toggle-row input[type="checkbox"] { display: none; }
+.toggle-switch {
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.18s;
+  flex-shrink: 0;
+}
+.toggle-row input:checked + .toggle-switch { background: var(--accent); }
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.18s;
+}
+.toggle-row input:checked + .toggle-switch::after { transform: translateX(16px); }
+.toggle-lbl { font-size: 13px; color: var(--text2); line-height: 1.3; }
+.toggle-row:hover .toggle-lbl { color: var(--text); }
+
+.btn-clean-settings {
+  width: 100%;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  padding: 13px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+}
+.btn-clean-settings:hover { background: var(--surface3); }
+
+/* ── Preview section ────────────────────────────────────────────── */
+#preview-section { display: none; padding-top: 8px; }
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.preview-headline {
+  font-size: 20px;
+  font-weight: 700;
+}
+.btn-start-over {
+  background: transparent;
+  color: var(--text3);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn-start-over:hover { color: var(--text); border-color: var(--border2); }
+
+/* Stats block */
+.stats-block {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.stat-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--text2);
+  font-family: var(--mono);
+}
+.stat-pill strong { color: var(--success); }
+
+/* Already clean */
+#already-clean-msg {
+  background: var(--info-bg);
+  border: 1px solid #1a3a5c;
+  padding: 16px;
+  color: var(--info);
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+/* Fuzzy pairs */
+#fuzzy-confirm-area {
+  background: var(--surface);
+  border: 1px solid var(--warn);
+  padding: 20px;
+  margin-bottom: 20px;
+  display: none;
+}
+.fuzzy-hdr { font-size: 15px; font-weight: 600; margin-bottom: 4px; color: var(--warn); }
+.fuzzy-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+.fuzzy-pairs-list { max-height: 240px; overflow-y: auto; margin-bottom: 16px; }
+.fuzzy-pair-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.fuzzy-pair-row:last-child { border-bottom: none; }
+.fuzzy-pair-row input { margin-top: 2px; flex-shrink: 0; }
+.fuzzy-pair-text { color: var(--text2); line-height: 1.4; }
+.fuzzy-pair-score { color: var(--text3); font-family: var(--mono); font-size: 11px; margin-left: auto; white-space: nowrap; }
+.btn-fuzzy-confirm {
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Preview table */
+#preview-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+.preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: var(--mono);
+  min-width: 400px;
+}
+.preview-table th {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.preview-table td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  color: var(--text);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-table tr:nth-child(even) td { background: var(--surface); }
+.preview-table .changed { background: #0d2535 !important; }
+.preview-table .changed-val { color: var(--success); }
+
+.preview-note {
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 16px;
+}
+.show-all-toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  margin-left: 8px;
+}
+
+/* Process button */
+#process-btn {
+  width: 100%;
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 16px;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+#process-btn:hover { opacity: 0.92; }
+
+/* Progress bar */
+#progress-wrap {
+  margin-bottom: 16px;
+  display: none;
+}
+.progress-label {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.progress-bar-bg {
+  height: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.1s;
+}
+
+/* Processing overlay */
+#processing-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11,17,32,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  display: none;
+}
+.processing-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 32px 40px;
+  text-align: center;
+}
+.processing-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.processing-text { color: var(--text2); font-size: 15px; }
+
+/* ── Download section ───────────────────────────────────────────── */
+#download-section { display: none; padding-top: 8px; }
+
+.dl-summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--success);
+  padding: 14px 16px;
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 24px;
+  font-family: var(--mono);
+}
+.dl-summary strong { color: var(--success); }
+
+.btn-dl-csv {
+  width: 100%;
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 16px;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.btn-dl-csv:hover { opacity: 0.92; }
+
+.excel-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  margin-bottom: 24px;
+}
+.excel-toggle-lbl { font-size: 14px; color: var(--text2); }
+.btn-dl-xlsx {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border2);
+  padding: 8px 16px;
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  display: none;
+  margin-left: auto;
+}
+.btn-dl-xlsx:hover { background: var(--surface2); }
+
+.btn-clean-another {
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border2);
+  padding: 13px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.btn-clean-another:hover { background: var(--surface2); }
+
+/* ── Feedback widget ────────────────────────────────────────────── */
+#feedback-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1px solid var(--border2);
+  padding: 10px 16px;
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  z-index: 150;
+  display: none;
+}
+#feedback-btn:hover { color: var(--text); background: var(--surface3); }
+
+/* ── Modals ─────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11,17,32,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 24px;
+}
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+}
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.modal-close {
+  float: right;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 18px;
+  cursor: pointer;
+  margin-top: -4px;
+  margin-right: -4px;
+  line-height: 1;
+  padding: 4px;
+}
+.modal-close:hover { color: var(--text); }
+.field-row { margin-bottom: 16px; }
+.field-lbl {
+  display: block;
+  font-size: 12px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.field-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  padding: 10px 12px;
+  min-height: 40px;
+}
+.field-input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+textarea.field-input { resize: vertical; min-height: 100px; }
+select.field-input { appearance: auto; cursor: pointer; }
+.char-hint { font-size: 11px; color: var(--text3); text-align: right; margin-top: 3px; }
+.btn-modal-submit {
+  width: 100%;
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.btn-modal-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+.modal-msg {
+  font-size: 13px;
+  padding: 10px;
+  margin-top: 12px;
+  display: none;
+}
+.modal-msg.success { background: var(--success-bg); color: var(--success); border: 1px solid #0f3a2a; }
+.modal-msg.error { background: var(--err-bg); color: var(--err); border: 1px solid #4a1a1a; }
+
+.recovery-result {
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 12px;
+  display: none;
+  line-height: 1.6;
+}
+.recovery-fallback {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- Privacy banner (always visible) -->
+<div id="privacy-banner"></div>
+
+<!-- Payment confirmation banner (first-purchase only) -->
+<div id="payment-banner" style="display:none"></div>
+
+<!-- ── LOCKED VIEW ──────────────────────────────────────────────── -->
+<div id="locked-view">
+  <div class="locked-card">
+    <h1 class="locked-headline" id="locked-headline"></h1>
+    <p class="locked-sub" id="locked-sub"></p>
+    <a id="locked-cta" href="#" class="btn-cta"></a>
+    <button class="already-paid-link" id="already-paid-btn"></button>
+  </div>
+</div>
+
+<!-- ── TOOL VIEW ────────────────────────────────────────────────── -->
+<div id="tool-view" style="display:none">
+  <div class="container">
+
+    <!-- ── Upload section ──────────────────────────────────────── -->
+    <div id="upload-section">
+      <!-- Drag-drop zone (desktop only) -->
+      <div id="drop-zone"><p id="drop-zone-text"></p></div>
+
+      <!-- File button row -->
+      <div class="file-btn-row">
+        <button class="btn-select-file" id="select-file-btn"></button>
+        <button class="btn-paste-toggle" id="paste-toggle-btn"></button>
+      </div>
+      <input type="file" id="file-input" accept=".csv" style="display:none">
+
+      <!-- Paste area -->
+      <textarea id="paste-area" placeholder="Paste your CSV text here..."></textarea>
+
+      <!-- File info -->
+      <div id="file-info"></div>
+
+      <!-- Messages -->
+      <div class="msg msg-err" id="msg-file-err"></div>
+      <div class="msg msg-warn" id="msg-file-warn"></div>
+      <div class="msg msg-info" id="msg-file-info"></div>
+
+      <!-- Quick Clean area -->
+      <div id="quick-clean-area">
+        <button id="quick-clean-btn"></button>
+        <p class="quick-clean-sub" id="quick-clean-sub"></p>
+
+        <!-- Advanced settings toggle -->
+        <div class="adv-toggle-row" id="adv-toggle-row" tabindex="0" role="button" aria-expanded="false">
+          <span class="adv-chevron" id="adv-chevron">▼</span>
+          <span id="adv-toggle-label"></span>
+        </div>
+
+        <div id="advanced-settings" role="region">
+          <div class="adv-section-label" id="preset-section-lbl"></div>
+          <div class="preset-row">
+            <span class="preset-lbl" id="preset-lbl"></span>
+            <select id="crm-preset">
+              <option value="generic" id="opt-generic"></option>
+              <option value="hubspot" id="opt-hubspot"></option>
+              <option value="salesforce" id="opt-salesforce"></option>
+              <option value="apollo" id="opt-apollo"></option>
+              <option value="mailchimp" id="opt-mailchimp"></option>
+            </select>
+          </div>
+
+          <div class="adv-section-label" id="toggles-section-lbl">Cleaning options</div>
+          <div class="toggles-grid">
+            <label class="toggle-row" id="row-dedup-exact">
+              <input type="checkbox" id="t-dedup-exact" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Remove duplicate rows (exact)</span>
+            </label>
+            <label class="toggle-row" id="row-dedup-email">
+              <input type="checkbox" id="t-dedup-email" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Deduplicate by email column</span>
+            </label>
+            <label class="toggle-row" id="row-lowercase-email">
+              <input type="checkbox" id="t-lowercase-email" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Lowercase emails</span>
+            </label>
+            <label class="toggle-row" id="row-title-case">
+              <input type="checkbox" id="t-title-case" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Title case names</span>
+            </label>
+            <label class="toggle-row" id="row-phone-fmt">
+              <input type="checkbox" id="t-phone-fmt" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Standardize phone numbers</span>
+            </label>
+            <label class="toggle-row" id="row-date-fmt">
+              <input type="checkbox" id="t-date-fmt" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Standardize dates (YYYY-MM-DD)</span>
+            </label>
+            <label class="toggle-row" id="row-trim">
+              <input type="checkbox" id="t-trim" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Trim whitespace</span>
+            </label>
+            <label class="toggle-row" id="row-empty-rows">
+              <input type="checkbox" id="t-empty-rows" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Remove empty rows</span>
+            </label>
+            <label class="toggle-row" id="row-empty-cols">
+              <input type="checkbox" id="t-empty-cols" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Remove empty columns</span>
+            </label>
+            <label class="toggle-row" id="row-dup-headers">
+              <input type="checkbox" id="t-dup-headers" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Remove duplicate column headers</span>
+            </label>
+            <label class="toggle-row" id="row-fuzzy">
+              <input type="checkbox" id="t-fuzzy">
+              <span class="toggle-switch"></span>
+              <span class="toggle-lbl">Fuzzy deduplicate (name+company) — 10k row max</span>
+            </label>
+          </div>
+
+          <button class="btn-clean-settings" id="clean-settings-btn"></button>
+        </div>
+      </div>
+    </div><!-- /upload-section -->
+
+    <!-- ── Preview section ─────────────────────────────────────── -->
+    <div id="preview-section">
+      <div class="preview-header">
+        <h2 class="preview-headline" id="preview-headline"></h2>
+        <button class="btn-start-over" id="start-over-btn"></button>
+      </div>
+
+      <div class="stats-block" id="stats-block"></div>
+
+      <div id="already-clean-msg"></div>
+
+      <!-- Fuzzy confirm -->
+      <div id="fuzzy-confirm-area">
+        <div class="fuzzy-hdr" id="fuzzy-hdr"></div>
+        <div class="fuzzy-sub" id="fuzzy-sub"></div>
+        <div class="fuzzy-pairs-list" id="fuzzy-pairs-list"></div>
+        <button class="btn-fuzzy-confirm" id="fuzzy-confirm-btn"></button>
+      </div>
+
+      <!-- Table -->
+      <div id="preview-table-wrap">
+        <table class="preview-table" id="preview-table"></table>
+      </div>
+      <p class="preview-note">
+        <span id="preview-note-text"></span>
+        <button class="show-all-toggle" id="show-all-btn"></button>
+      </p>
+
+      <!-- Progress bar -->
+      <div id="progress-wrap">
+        <div class="progress-label" id="progress-label">Processing...</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill"></div></div>
+      </div>
+
+      <button id="process-btn"></button>
+      <div class="msg msg-info" id="msg-adjust" style="margin-top:4px">
+        <button id="adjust-settings-btn" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;text-decoration:underline;padding:0"></button>
+      </div>
+    </div><!-- /preview-section -->
+
+    <!-- ── Download section ────────────────────────────────────── -->
+    <div id="download-section">
+      <div class="dl-summary" id="dl-summary"></div>
+
+      <button class="btn-dl-csv" id="dl-csv-btn"></button>
+
+      <div class="excel-row">
+        <label class="toggle-row" style="border:none;padding:0;flex:1">
+          <input type="checkbox" id="t-excel">
+          <span class="toggle-switch"></span>
+          <span class="toggle-lbl excel-toggle-lbl" id="excel-toggle-lbl"></span>
+        </label>
+        <button class="btn-dl-xlsx" id="dl-xlsx-btn"></button>
+      </div>
+
+      <button class="btn-clean-another" id="clean-another-btn"></button>
+    </div><!-- /download-section -->
+
+  </div><!-- /container -->
+
+  <!-- Feedback widget button (unlocked only) -->
+  <button id="feedback-btn"></button>
+</div><!-- /tool-view -->
+
+<!-- ── Processing overlay ────────────────────────────────────────── -->
+<div id="processing-overlay" style="display:none">
+  <div class="processing-box">
+    <div class="processing-spinner"></div>
+    <div class="processing-text" id="processing-text"></div>
+  </div>
+</div>
+
+<!-- ── Recovery modal ────────────────────────────────────────────── -->
+<div class="modal-overlay" id="recovery-modal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="recovery-close">✕</button>
+    <div class="modal-title" id="recovery-title"></div>
+    <div class="field-row">
+      <label class="field-lbl" id="recovery-email-lbl"></label>
+      <input type="email" class="field-input" id="recovery-email-input" placeholder="you@example.com">
+    </div>
+    <button class="btn-modal-submit" id="recovery-submit-btn">Submit</button>
+    <div class="recovery-result" id="recovery-result"></div>
+  </div>
+</div>
+
+<!-- ── Feedback modal ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="feedback-modal" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="feedback-close">✕</button>
+    <div class="modal-title" id="feedback-title"></div>
+    <div class="field-row">
+      <label class="field-lbl" id="fb-type-lbl"></label>
+      <select class="field-input" id="fb-type">
+        <option value="" disabled selected>—</option>
+        <option value="bug" id="opt-bug"></option>
+        <option value="feature" id="opt-feature"></option>
+        <option value="other" id="opt-other"></option>
+      </select>
+    </div>
+    <div class="field-row">
+      <label class="field-lbl" id="fb-msg-lbl"></label>
+      <textarea class="field-input" id="fb-msg" maxlength="500"></textarea>
+      <div class="char-hint" id="fb-char-hint">0/500</div>
+    </div>
+    <div class="field-row">
+      <label class="field-lbl" id="fb-email-lbl"></label>
+      <input type="email" class="field-input" id="fb-email" placeholder="you@example.com (optional)">
+    </div>
+    <button class="btn-modal-submit" id="fb-submit-btn" disabled></button>
+    <div class="modal-msg" id="fb-msg-result"></div>
+  </div>
+</div>
+
+<!-- ── Cookie notice ─────────────────────────────────────────────── -->
+<div id="cookie-notice" style="display:none">
+  <span id="cookie-text"></span>
+  <button id="cookie-dismiss"></button>
+</div>
+
+<script>
+// ── Placeholder constants (replace before deploy) ────────────────
+const LS_CHECKOUT_URL    = 'REPLACE_WITH_LEMON_SQUEEZY_CHECKOUT_URL';
+const FORMSPARK_ENDPOINT = 'REPLACE_WITH_FORMSPARK_ENDPOINT';
+const STORAGE_KEY        = 'cleanlist_v1_order_id';
+
+// ── i18n ─────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    privacyBanner:      'Your data never leaves your browser — whether uploaded or pasted. All processing happens locally.',
+    cookieNotice:       'This site uses cookies for payment processing only. No tracking.',
+    cookieDismiss:      'Got it',
+    lockedHeadline:     'CleanList',
+    lockedSubhead:      'Clean your CSV in seconds. Nothing uploaded. No account.',
+    lockedCta:          'Get CleanList — $39',
+    alreadyPaid:        'I already paid',
+    paymentConfirmed:   'Payment confirmed — you\'re in. Start cleaning below.',
+    dropZone:           'Drop your CSV here',
+    selectFile:         'Select CSV file',
+    pasteToggle:        'Or paste CSV text',
+    quickClean:         'Quick Clean',
+    quickCleanSub:      'Instantly apply smart defaults',
+    advancedToggle:     'Advanced settings',
+    presetLabel:        'CRM Preset',
+    presetGeneric:      'Generic',
+    presetHubSpot:      'HubSpot',
+    presetSalesforce:   'Salesforce',
+    presetApollo:       'Apollo',
+    presetMailchimp:    'Mailchimp',
+    cleanWithSettings:  'Clean with these settings',
+    previewHeadline:    'Here\'s what will change',
+    statsDupes:         '{n} duplicates removed',
+    statsEmptyRows:     '{n} empty rows dropped',
+    statsColumns:       '{n} columns removed',
+    statsDates:         '{n} dates converted',
+    statsPhones:        '{n} phones reformatted',
+    previewNote:        'Showing first 50 rows and changed columns — full file processed on download',
+    showAllCols:        'Show all columns',
+    alreadyClean:       'Your file looks clean already — no changes detected. You can still download it or adjust settings.',
+    processBtn:         'Process full file',
+    startOver:          'Start over',
+    adjustSettings:     'Adjust settings',
+    fuzzyConfirmHdr:    'Confirm fuzzy duplicates',
+    fuzzyConfirmSub:    'Uncheck any pairs you want to keep, then confirm.',
+    fuzzyConfirmBtn:    'Confirm and continue',
+    processingMsg:      'Working on it...',
+    downloadCsv:        'Download CSV',
+    downloadXlsx:       'Download as Excel (.xlsx)',
+    summaryLine:        'Original: {orig} rows · Cleaned: {clean} rows · Removed: {removed} · Time: {sec}s',
+    cleanAnother:       'Clean another file',
+    errNotCsv:          'This file couldn\'t be read as a CSV. Please select a .csv file.',
+    errEmpty:           'This file appears to be empty.',
+    warnLargeFile:      'Large file — processing may take a moment. Your browser is doing all the work.',
+    warnManyRows:       'This file has {n} rows — we\'ll show a progress bar.',
+    errNoHeaders:       'Couldn\'t detect column headers. Please ensure row 1 is a header row.',
+    noticeOneCol:       'Only one column detected — trim and empty row removal will still run.',
+    noticeColMissing:   'Couldn\'t detect {col} column — you can skip this rule or adjust settings.',
+    feedbackBtn:        '💬 Feedback',
+    feedbackTitle:      'Send Feedback',
+    feedbackTypeLbl:    'Type',
+    feedbackTypeBug:    'Bug Report',
+    feedbackTypeFeature:'Feature Request',
+    feedbackTypeOther:  'Other',
+    feedbackMsgLbl:     'Message',
+    feedbackEmailLbl:   'Email (optional)',
+    feedbackSubmit:     'Send Feedback',
+    feedbackSuccess:    'Thanks — we read every submission.',
+    feedbackError:      'Something went wrong — please try again.',
+    recoveryTitle:      'Restore Access',
+    recoveryEmailLbl:   'Order email address',
+    recoveryMsg:        'Check your email — Lemon Squeezy sent a receipt with your access link.',
+    recoveryFallback:   'Can\'t find your receipt? Email support@cleanlistapp.com with your order confirmation.'
+  }
+};
+i18n.de = { ...i18n.en };
+i18n.pt = { ...i18n.en };
+
+function detectLang() {
+  const l = navigator.language || 'en';
+  if (l.startsWith('de')) return 'de';
+  if (l.startsWith('pt')) return 'pt';
+  return 'en';
+}
+const LANG = detectLang();
+const t = i18n[LANG];
+
+function fmt(str, vars) {
+  return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
+}
+
+// ── Column detection maps (EQUALS-ONLY, case-insensitive) ────────
+const COL_MAP = {
+  email:     ['email', 'e-mail', 'email address', 'emailaddress'],
+  firstName: ['first name', 'firstname', 'first_name', 'fname', 'given name'],
+  lastName:  ['last name', 'lastname', 'last_name', 'lname', 'surname', 'family name'],
+  fullName:  ['full name', 'fullname', 'full_name', 'contact name'],
+  phone:     ['phone', 'mobile', 'cell', 'telephone', 'tel', 'phone number', 'mobile number'],
+  company:   ['company', 'organization', 'organisation', 'company name', 'account name', 'employer'],
+  date:      ['date', 'created date', 'modified date', 'updated date', 'timestamp', 'joined',
+              'signup date', 'created at', 'updated at']
+};
+
+// ── CRM system column removal arrays ────────────────────────────
+const CRM_COLS = {
+  hubspot: [
+    'hs_object_id','createdate','hs_lastmodifieddate','hubspot_owner_id',
+    'hs_pipeline','hs_pipeline_stage','hs_deal_stage_probability',
+    'hs_ticket_priority','hs_all_owner_ids','hs_created_by_user_id',
+    'hs_updated_by_user_id','hs_is_contact','hs_merged_object_ids',
+    'hs_unique_creation_key','hs_user_ids_of_all_owners',
+    'num_associated_deals','num_notes','hs_sequences_is_enrolled',
+    'hs_sequences_enrolled_count','notes_last_updated',
+    'notes_next_activity_date','num_contacted_notes','num_associated_contacts'
+  ],
+  salesforce: [
+    'Id','OwnerId','RecordTypeId','CreatedById','LastModifiedById',
+    'SystemModstamp','IsDeleted','MasterRecordId'
+  ],
+  apollo: [
+    'sequence_name','step_number','email_open_count','email_click_count',
+    'reply_count','bounced','apollo_contact_id','account_id',
+    'apollo_account_id','stage','last_contacted_at','contact_stage_id',
+    'sequence_id','sequence_step_id','last_activity_date'
+  ],
+  mailchimp: [
+    'UNSUB','BOUNCE','STATUS','MEMBER_RATING','OPTIN_TIME','OPTIN_IP',
+    'CONFIRM_TIME','CONFIRM_IP','LATITUDE','LONGITUDE','GMTOFF','DSTOFF',
+    'CC','REGION','LAST_CHANGED','LEID','EUID','NOTES'
+  ]
+};
+
+// ── CRM preset toggle configs ────────────────────────────────────
+const PRESET_CONFIGS = {
+  generic: {
+    dedupExact: false, dedupEmail: false, lowercaseEmail: false,
+    titleCase: false, phoneFmt: false, dateFmt: false,
+    trim: true, emptyRows: true, emptyCols: true,
+    dupHeaders: true, fuzzy: false
+  },
+  hubspot: {
+    dedupExact: false, dedupEmail: true, lowercaseEmail: true,
+    titleCase: false, phoneFmt: true, dateFmt: true,
+    trim: true, emptyRows: true, emptyCols: false,
+    dupHeaders: true, fuzzy: false
+  },
+  salesforce: {
+    dedupExact: false, dedupEmail: true, lowercaseEmail: false,
+    titleCase: true, phoneFmt: true, dateFmt: false,
+    trim: true, emptyRows: true, emptyCols: false,
+    dupHeaders: true, fuzzy: false
+  },
+  apollo: {
+    dedupExact: false, dedupEmail: true, lowercaseEmail: false,
+    titleCase: false, phoneFmt: false, dateFmt: false,
+    trim: true, emptyRows: true, emptyCols: false,
+    dupHeaders: true, fuzzy: false
+  },
+  mailchimp: {
+    dedupExact: false, dedupEmail: true, lowercaseEmail: true,
+    titleCase: false, phoneFmt: false, dateFmt: false,
+    trim: true, emptyRows: true, emptyCols: false,
+    dupHeaders: true, fuzzy: false
+  }
+};
+
+// ── Month name lookup for date parsing ───────────────────────────
+const MONTH_NAMES = [
+  'january','february','march','april','may','june',
+  'july','august','september','october','november','december'
+];
+const MONTH_SHORT = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+
+// ── Helpers ──────────────────────────────────────────────────────
+
+function detectColType(header) {
+  const h = header.trim().toLowerCase();
+  for (const [type, candidates] of Object.entries(COL_MAP)) {
+    for (const c of candidates) {
+      if (h === c.toLowerCase()) return type;
+    }
+  }
+  return null;
+}
+
+function buildColIndex(headers) {
+  const idx = {};
+  headers.forEach((h, i) => {
+    const type = detectColType(h);
+    if (type && idx[type] === undefined) idx[type] = i;
+  });
+  return idx;
+}
+
+/* Title case — handles Mc, Mac, O' edge cases */
+function titleCase(val) {
+  if (!val) return val;
+  return val.replace(/\S+/g, w => {
+    if (/^Mc.+/i.test(w) && w.length > 2) {
+      return 'Mc' + w[2].toUpperCase() + w.slice(3).toLowerCase();
+    }
+    if (/^Mac[A-Z]/i.test(w) && w.length > 3) {
+      return 'Mac' + w[3].toUpperCase() + w.slice(4).toLowerCase();
+    }
+    if (/^O'/i.test(w) && w.length > 2) {
+      return "O'" + w[2].toUpperCase() + w.slice(3).toLowerCase();
+    }
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  });
+}
+
+/* Phone standardization: 10-digit → (XXX) XXX-XXXX, 11-digit starting 1 → +1 (XXX) XXX-XXXX */
+function standardizePhone(val) {
+  if (!val) return { out: val, changed: false };
+  const s = String(val).trim();
+  if (!s) return { out: s, changed: false };
+  const digits = s.replace(/\D/g, '');
+  if (digits.length === 10) {
+    const out = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+    return { out, changed: out !== s };
+  }
+  if (digits.length === 11 && digits[0] === '1') {
+    const out = `+1 (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+    return { out, changed: out !== s };
+  }
+  // International — preserve unchanged
+  return { out: s, changed: false };
+}
+
+/* Date standardization — 11 common formats → YYYY-MM-DD
+   MM/DD default for ambiguous two-part numeric dates.
+   If day part > 12 → unambiguously DD/MM.
+   Only counts as a conversion when the value actually changes. */
+function standardizeDate(val) {
+  if (!val) return { out: val, changed: false };
+  const s = String(val).trim();
+  if (!s) return { out: s, changed: false };
+
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { out: s, changed: false };
+
+  let out = null;
+
+  // YYYY/MM/DD
+  let m = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (m) {
+    out = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  }
+
+  // Month name: "January 15, 2024" or "January 15 2024"
+  if (!out) {
+    m = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+    if (m) {
+      const mi = MONTH_NAMES.indexOf(m[1].toLowerCase());
+      const ms = MONTH_SHORT.indexOf(m[1].toLowerCase().slice(0,3));
+      const idx = mi >= 0 ? mi : ms;
+      if (idx >= 0) out = `${m[3]}-${String(idx+1).padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+    }
+  }
+
+  // "15 January 2024" or "15 Jan 2024"
+  if (!out) {
+    m = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+    if (m) {
+      const mi = MONTH_NAMES.indexOf(m[2].toLowerCase());
+      const ms = MONTH_SHORT.indexOf(m[2].toLowerCase().slice(0,3));
+      const idx = mi >= 0 ? mi : ms;
+      if (idx >= 0) out = `${m[3]}-${String(idx+1).padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    }
+  }
+
+  // Numeric X/Y/YYYY or X-Y-YYYY or X.Y.YYYY (4-digit year)
+  if (!out) {
+    m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+    if (m) {
+      const a = parseInt(m[1],10), b = parseInt(m[2],10);
+      let mon, day;
+      if (a > 12) { day = a; mon = b; }       // a must be day
+      else if (b > 12) { mon = a; day = b; }  // b must be day
+      else { mon = a; day = b; }              // ambiguous: MM/DD default
+      out = `${m[3]}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    }
+  }
+
+  // X/Y/YY (2-digit year)
+  if (!out) {
+    m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
+    if (m) {
+      const a = parseInt(m[1],10), b = parseInt(m[2],10);
+      const yr = parseInt(m[3],10) < 50 ? 2000 + parseInt(m[3],10) : 1900 + parseInt(m[3],10);
+      let mon, day;
+      if (a > 12) { day = a; mon = b; }
+      else if (b > 12) { mon = a; day = b; }
+      else { mon = a; day = b; }
+      out = `${yr}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    }
+  }
+
+  if (!out) return { out: s, changed: false };
+  return { out, changed: out !== s };
+}
+
+/* Check if a row is entirely empty/whitespace */
+function isRowEmpty(row, headers) {
+  return headers.every(h => !row[h] || String(row[h]).trim() === '');
+}
+
+/* Fuzzy dedup — Levenshtein on name+company string
+   matchString = (firstName + ' ' + lastName + ' ' + company) or (fullName + ' ' + company)
+   Truncated to 200 chars. Hard cap: 10,000 rows. */
+function buildMatchString(row, headers, colIdx) {
+  let s;
+  if (colIdx.firstName !== undefined || colIdx.lastName !== undefined) {
+    const fn = colIdx.firstName !== undefined ? (row[headers[colIdx.firstName]] || '') : '';
+    const ln = colIdx.lastName  !== undefined ? (row[headers[colIdx.lastName]]  || '') : '';
+    const co = colIdx.company   !== undefined ? (row[headers[colIdx.company]]   || '') : '';
+    s = (fn + ' ' + ln + ' ' + co).trim().toLowerCase();
+  } else if (colIdx.fullName !== undefined) {
+    const fn = row[headers[colIdx.fullName]] || '';
+    const co = colIdx.company !== undefined ? (row[headers[colIdx.company]] || '') : '';
+    s = (fn + ' ' + co).trim().toLowerCase();
+  } else {
+    return null;
+  }
+  return s.slice(0, 200);
+}
+
+function runFuzzyDedup(rows, headers, colIdx, threshold) {
+  if (rows.length > 10000) return { pairs: [], capped: true };
+  const strings = rows.map(r => buildMatchString(r, headers, colIdx));
+  const pairs = [];
+  for (let i = 0; i < strings.length; i++) {
+    if (!strings[i]) continue;
+    for (let j = i + 1; j < strings.length; j++) {
+      if (!strings[j]) continue;
+      const maxLen = Math.max(strings[i].length, strings[j].length);
+      if (maxLen === 0) continue;
+      const dist = levenshtein.get(strings[i], strings[j]);
+      const sim = 1 - dist / maxLen;
+      if (sim >= threshold) {
+        pairs.push({ i, j, sim: Math.round(sim * 100), a: strings[i], b: strings[j] });
+      }
+    }
+  }
+  return { pairs, capped: false };
+}
+
+/* ── Main cleaning function ─────────────────────────────────────── */
+function cleanData(rawRows, rawHeaders, settings) {
+  const stats = { dupes: 0, emptyRows: 0, colsRemoved: 0, dates: 0, phones: 0, dupHeaders: 0 };
+  let headers = [...rawHeaders];
+  let rows = rawRows.map(r => ({ ...r }));
+
+  // 1. Remove duplicate column headers (keep first occurrence)
+  if (settings.dupHeaders) {
+    const seen = new Set();
+    const keptIndices = [];
+    headers.forEach((h, i) => {
+      const key = h.toLowerCase();
+      if (!seen.has(key)) { seen.add(key); keptIndices.push(i); }
+      else stats.dupHeaders++;
+    });
+    if (stats.dupHeaders > 0) {
+      const keptHeaders = keptIndices.map(i => headers[i]);
+      rows = rows.map(row => {
+        const newRow = {};
+        keptHeaders.forEach(h => { newRow[h] = row[h]; });
+        return newRow;
+      });
+      headers = keptHeaders;
+    }
+  }
+
+  // 2. Remove CRM system columns
+  if (settings.crmCols) {
+    const removeSet = new Set(
+      CRM_COLS[settings.crmCols].map(c => c.toLowerCase())
+    );
+    const origLen = headers.length;
+    headers = headers.filter(h => !removeSet.has(h.toLowerCase()));
+    stats.colsRemoved += origLen - headers.length;
+    if (stats.colsRemoved > 0) {
+      rows = rows.map(row => {
+        const newRow = {};
+        headers.forEach(h => { newRow[h] = row[h]; });
+        return newRow;
+      });
+    }
+  }
+
+  // 3. Build column index (after header cleanup)
+  const colIdx = buildColIndex(headers);
+
+  // 4. Trim whitespace (apply first so comparisons are clean)
+  if (settings.trim) {
+    rows = rows.map(row => {
+      const r = {};
+      headers.forEach(h => { r[h] = row[h] != null ? String(row[h]).trim() : row[h]; });
+      return r;
+    });
+  }
+
+  // 5. Remove empty rows
+  if (settings.emptyRows) {
+    const before = rows.length;
+    rows = rows.filter(r => !isRowEmpty(r, headers));
+    stats.emptyRows += before - rows.length;
+  }
+
+  // 6. Remove exact duplicate rows
+  if (settings.dedupExact) {
+    const seen = new Set();
+    const filtered = [];
+    rows.forEach(row => {
+      const key = headers.map(h => String(row[h] ?? '')).join('\x00');
+      if (!seen.has(key)) { seen.add(key); filtered.push(row); }
+      else stats.dupes++;
+    });
+    rows = filtered;
+  }
+
+  // 7. Deduplicate by email
+  if (settings.dedupEmail && colIdx.email !== undefined) {
+    const emailCol = headers[colIdx.email];
+    const seen = new Set();
+    const filtered = [];
+    rows.forEach(row => {
+      const email = String(row[emailCol] || '').trim().toLowerCase();
+      if (!email) { filtered.push(row); return; }
+      if (!seen.has(email)) { seen.add(email); filtered.push(row); }
+      else stats.dupes++;
+    });
+    rows = filtered;
+  }
+
+  // 8. Lowercase emails
+  if (settings.lowercaseEmail && colIdx.email !== undefined) {
+    const emailCol = headers[colIdx.email];
+    rows = rows.map(row => {
+      const r = { ...row };
+      if (r[emailCol]) r[emailCol] = String(r[emailCol]).toLowerCase();
+      return r;
+    });
+  }
+
+  // 9. Title case names
+  if (settings.titleCase) {
+    const nameCols = ['firstName', 'lastName', 'fullName']
+      .filter(t => colIdx[t] !== undefined)
+      .map(t => headers[colIdx[t]]);
+    if (nameCols.length > 0) {
+      rows = rows.map(row => {
+        const r = { ...row };
+        nameCols.forEach(col => { if (r[col]) r[col] = titleCase(String(r[col])); });
+        return r;
+      });
+    }
+  }
+
+  // 10. Standardize phone numbers
+  if (settings.phoneFmt && colIdx.phone !== undefined) {
+    const phoneCol = headers[colIdx.phone];
+    rows = rows.map(row => {
+      const r = { ...row };
+      if (r[phoneCol]) {
+        const result = standardizePhone(r[phoneCol]);
+        r[phoneCol] = result.out;
+        if (result.changed) stats.phones++;
+      }
+      return r;
+    });
+  }
+
+  // 11. Standardize dates
+  if (settings.dateFmt) {
+    const dateCols = colIdx.date !== undefined ? [headers[colIdx.date]] : [];
+    // Also check all columns matching date type
+    headers.forEach((h, i) => {
+      if (detectColType(h) === 'date' && !dateCols.includes(h)) dateCols.push(h);
+    });
+    if (dateCols.length > 0) {
+      rows = rows.map(row => {
+        const r = { ...row };
+        dateCols.forEach(col => {
+          if (r[col]) {
+            const result = standardizeDate(r[col]);
+            r[col] = result.out;
+            if (result.changed) stats.dates++;
+          }
+        });
+        return r;
+      });
+    }
+  }
+
+  // 12. Remove empty columns
+  if (settings.emptyCols) {
+    const origLen = headers.length;
+    headers = headers.filter(h => rows.some(r => r[h] && String(r[h]).trim() !== ''));
+    const removed = origLen - headers.length;
+    stats.colsRemoved += removed;
+    if (removed > 0) {
+      rows = rows.map(row => {
+        const r = {};
+        headers.forEach(h => { r[h] = row[h]; });
+        return r;
+      });
+    }
+  }
+
+  return { rows, headers, stats };
+}
+
+// ── App state ────────────────────────────────────────────────────
+let state = {
+  parsedRows: [],
+  parsedHeaders: [],
+  originalFilename: '',
+  cleanedRows: [],
+  cleanedHeaders: [],
+  cleanStats: {},
+  settings: {},
+  crmName: 'CSV',
+  startTime: null,
+  fuzzyPairs: [],
+  showAllCols: false,
+  xlsxLoaded: false
+};
+
+// ── UI helpers ───────────────────────────────────────────────────
+function showMsg(id, text) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = text; el.style.display = 'block'; }
+}
+function hideMsg(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+function clearMsgs() {
+  ['msg-file-err','msg-file-warn','msg-file-info'].forEach(hideMsg);
+}
+
+function showSection(name) {
+  ['upload-section','preview-section','download-section'].forEach(id => {
+    document.getElementById(id).style.display = (id === name + '-section') ? 'block' : 'none';
+  });
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progress-fill').style.width = pct + '%';
+  if (label) document.getElementById('progress-label').textContent = label;
+  document.getElementById('progress-wrap').style.display = pct < 100 ? 'block' : 'none';
+}
+
+function showOverlay(show) {
+  document.getElementById('processing-overlay').style.display = show ? 'flex' : 'none';
+}
+
+// ── Current settings from toggles ────────────────────────────────
+function getSettings() {
+  const preset = document.getElementById('crm-preset').value;
+  return {
+    dedupExact:     document.getElementById('t-dedup-exact').checked,
+    dedupEmail:     document.getElementById('t-dedup-email').checked,
+    lowercaseEmail: document.getElementById('t-lowercase-email').checked,
+    titleCase:      document.getElementById('t-title-case').checked,
+    phoneFmt:       document.getElementById('t-phone-fmt').checked,
+    dateFmt:        document.getElementById('t-date-fmt').checked,
+    trim:           document.getElementById('t-trim').checked,
+    emptyRows:      document.getElementById('t-empty-rows').checked,
+    emptyCols:      document.getElementById('t-empty-cols').checked,
+    dupHeaders:     document.getElementById('t-dup-headers').checked,
+    fuzzy:          document.getElementById('t-fuzzy').checked,
+    crmCols:        preset !== 'generic' ? preset : null,
+    preset
+  };
+}
+
+function applyQuickCleanSettings() {
+  document.getElementById('crm-preset').value = 'generic';
+  document.getElementById('t-dedup-exact').checked = true;
+  document.getElementById('t-dedup-email').checked = true;
+  document.getElementById('t-lowercase-email').checked = true;
+  document.getElementById('t-title-case').checked = true;
+  document.getElementById('t-phone-fmt').checked = true;
+  document.getElementById('t-date-fmt').checked = true;
+  document.getElementById('t-trim').checked = true;
+  document.getElementById('t-empty-rows').checked = true;
+  document.getElementById('t-empty-cols').checked = true;
+  document.getElementById('t-dup-headers').checked = true;
+  document.getElementById('t-fuzzy').checked = false;
+}
+
+function applyPreset(preset) {
+  const cfg = PRESET_CONFIGS[preset];
+  if (!cfg) return;
+  document.getElementById('t-dedup-exact').checked     = cfg.dedupExact;
+  document.getElementById('t-dedup-email').checked     = cfg.dedupEmail;
+  document.getElementById('t-lowercase-email').checked = cfg.lowercaseEmail;
+  document.getElementById('t-title-case').checked      = cfg.titleCase;
+  document.getElementById('t-phone-fmt').checked       = cfg.phoneFmt;
+  document.getElementById('t-date-fmt').checked        = cfg.dateFmt;
+  document.getElementById('t-trim').checked            = cfg.trim;
+  document.getElementById('t-empty-rows').checked      = cfg.emptyRows;
+  document.getElementById('t-empty-cols').checked      = cfg.emptyCols;
+  document.getElementById('t-dup-headers').checked     = cfg.dupHeaders;
+  document.getElementById('t-fuzzy').checked           = cfg.fuzzy;
+}
+
+// ── File handling ────────────────────────────────────────────────
+function handleFile(file) {
+  clearMsgs();
+
+  // Validate extension + MIME
+  const ext = file.name.split('.').pop().toLowerCase();
+  const ok = ext === 'csv' || file.type === 'text/csv' || file.type === 'text/plain';
+  if (!ok) {
+    showMsg('msg-file-err', t.errNotCsv);
+    resetFileInput();
+    return;
+  }
+
+  if (file.size > 20 * 1024 * 1024) {
+    showMsg('msg-file-warn', t.warnLargeFile);
+  }
+
+  state.originalFilename = file.name;
+
+  if (file.size > 5 * 1024 * 1024) showOverlay(true);
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    showOverlay(false);
+    processCSVText(e.target.result, file.name);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function handlePasteLoad() {
+  const text = document.getElementById('paste-area').value.trim();
+  if (!text) { showMsg('msg-file-err', t.errEmpty); return; }
+  clearMsgs();
+  state.originalFilename = 'pasted-data.csv';
+  processCSVText(text, 'pasted-data.csv');
+}
+
+function processCSVText(text, filename) {
+  if (!text.trim()) { showMsg('msg-file-err', t.errEmpty); return; }
+
+  const result = Papa.parse(text, {
+    header: true,
+    skipEmptyLines: false,
+    dynamicTyping: false,
+    delimiter: ''
+  });
+
+  if (result.errors && result.errors.length > 0 && result.data.length === 0) {
+    showMsg('msg-file-err', t.errNotCsv);
+    resetFileInput();
+    return;
+  }
+
+  const rows = result.data;
+  const headers = result.meta.fields;
+
+  if (!headers || headers.length === 0) {
+    showMsg('msg-file-err', t.errNoHeaders);
+    resetFileInput();
+    return;
+  }
+
+  if (rows.length === 0) {
+    showMsg('msg-file-err', t.errEmpty);
+    return;
+  }
+
+  if (headers.length === 1) {
+    showMsg('msg-file-info', t.noticeOneCol);
+  }
+
+  if (rows.length > 50000) {
+    showMsg('msg-file-warn', fmt(t.warnManyRows, { n: rows.length.toLocaleString() }));
+  }
+
+  state.parsedRows = rows;
+  state.parsedHeaders = headers;
+
+  // Show file info
+  const infoEl = document.getElementById('file-info');
+  infoEl.innerHTML = `<span>${filename}</span> — ${rows.length.toLocaleString()} rows, ${headers.length} columns`;
+  infoEl.style.display = 'block';
+
+  // Show Quick Clean area
+  document.getElementById('quick-clean-area').style.display = 'block';
+}
+
+function resetFileInput() {
+  document.getElementById('file-input').value = '';
+  document.getElementById('paste-area').value = '';
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('quick-clean-area').style.display = 'none';
+  state.parsedRows = [];
+  state.parsedHeaders = [];
+}
+
+// ── Run cleaning ─────────────────────────────────────────────────
+function runCleaning(settings) {
+  if (!state.parsedRows.length) {
+    // Try paste area
+    const pasteVal = document.getElementById('paste-area').value.trim();
+    if (pasteVal) { handlePasteLoad(); return; }
+    showMsg('msg-file-err', 'Please select or paste a CSV file first.');
+    return;
+  }
+
+  state.settings = settings;
+  state.startTime = Date.now();
+
+  const rowCount = state.parsedRows.length;
+
+  // Show overlay for large files
+  if (rowCount > 5000) {
+    showOverlay(true);
+    document.getElementById('processing-text').textContent = t.processingMsg;
+  }
+
+  // Use setTimeout to allow UI to render overlay
+  setTimeout(() => {
+    try {
+      const result = cleanData(state.parsedRows, state.parsedHeaders, settings);
+      state.cleanedRows = result.rows;
+      state.cleanedHeaders = result.headers;
+      state.cleanStats = result.stats;
+
+      showOverlay(false);
+
+      // Handle fuzzy dedup
+      if (settings.fuzzy) {
+        const colIdx = buildColIndex(state.cleanedHeaders);
+        if (rowCount > 10000) {
+          showMsg('msg-file-warn', 'Fuzzy dedup skipped — file exceeds 10,000 row limit.');
+          renderPreview(false);
+          return;
+        }
+        const { pairs, capped } = runFuzzyDedup(
+          state.cleanedRows, state.cleanedHeaders, colIdx, 0.85
+        );
+        state.fuzzyPairs = pairs;
+        if (pairs.length > 0) {
+          renderFuzzyConfirm(pairs);
+          renderPreview(true);
+          return;
+        }
+      }
+
+      renderPreview(false);
+    } catch (err) {
+      showOverlay(false);
+      showMsg('msg-file-err', 'An error occurred while processing your file. Please try again.');
+      console.error(err);
+    }
+  }, rowCount > 5000 ? 50 : 0);
+}
+
+// ── Render preview ───────────────────────────────────────────────
+function renderPreview(hasFuzzy) {
+  showSection('preview');
+
+  const { cleanedRows, cleanedHeaders, parsedRows, parsedHeaders, cleanStats } = state;
+  const t_ = t;
+
+  // Stats block
+  const statsEl = document.getElementById('stats-block');
+  statsEl.innerHTML = '';
+  const addStat = (key, val) => {
+    if (!val) return;
+    const pill = document.createElement('div');
+    pill.className = 'stat-pill';
+    pill.innerHTML = `<strong>${val}</strong> ${key}`;
+    statsEl.appendChild(pill);
+  };
+
+  const totalDupes = cleanStats.dupes || 0;
+  const emptyRowsRemoved = cleanStats.emptyRows || 0;
+  const colsRemoved = cleanStats.colsRemoved || 0;
+  const datesConverted = cleanStats.dates || 0;
+  const phonesFormatted = cleanStats.phones || 0;
+
+  if (totalDupes) addStat('duplicates removed', totalDupes);
+  if (emptyRowsRemoved) addStat('empty rows dropped', emptyRowsRemoved);
+  if (colsRemoved) addStat('columns removed', colsRemoved);
+  if (datesConverted) addStat('dates converted', datesConverted);
+  if (phonesFormatted) addStat('phones reformatted', phonesFormatted);
+
+  // Detect changed columns (between original first 50 rows and cleaned first 50)
+  const preview50orig = parsedRows.slice(0, 50);
+  const preview50clean = cleanedRows.slice(0, 50);
+
+  const changedCols = new Set();
+  cleanedHeaders.forEach(h => {
+    for (let i = 0; i < Math.min(preview50orig.length, preview50clean.length); i++) {
+      const orig = String(preview50orig[i]?.[h] ?? '');
+      const clean = String(preview50clean[i]?.[h] ?? '');
+      if (orig !== clean) { changedCols.add(h); break; }
+    }
+    // Also: if col existed in orig but not in cleaned → removal (handled via colsRemoved)
+  });
+
+  // Also mark cols that only exist in cleanedHeaders (new) vs parsedHeaders
+  const removedCols = parsedHeaders.filter(h => !cleanedHeaders.includes(h));
+
+  const hasChanges = totalDupes > 0 || emptyRowsRemoved > 0 || colsRemoved > 0 ||
+    datesConverted > 0 || phonesFormatted > 0 || changedCols.size > 0;
+
+  // Already-clean message
+  const alreadyCleanEl = document.getElementById('already-clean-msg');
+  if (!hasChanges && !hasFuzzy) {
+    alreadyCleanEl.textContent = t_.alreadyClean;
+    alreadyCleanEl.style.display = 'block';
+  } else {
+    alreadyCleanEl.style.display = 'none';
+  }
+
+  // Render table
+  const displayHeaders = state.showAllCols ? cleanedHeaders :
+    (changedCols.size > 0 ? [...changedCols] : cleanedHeaders);
+
+  const table = document.getElementById('preview-table');
+  table.innerHTML = '';
+
+  // Header row
+  const thead = document.createElement('thead');
+  const hrow = document.createElement('tr');
+  displayHeaders.forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    if (changedCols.has(h)) th.style.color = 'var(--success)';
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  // Body rows
+  const tbody = document.createElement('tbody');
+  preview50clean.forEach((row, ri) => {
+    const tr = document.createElement('tr');
+    displayHeaders.forEach(h => {
+      const td = document.createElement('td');
+      const cleanVal = String(row[h] ?? '');
+      const origVal  = String(preview50orig[ri]?.[h] ?? '');
+      td.textContent = cleanVal;
+      if (changedCols.has(h)) {
+        tr.classList.add('changed');
+        if (cleanVal !== origVal) td.classList.add('changed-val');
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+
+  // Show all toggle
+  const showAllBtn = document.getElementById('show-all-btn');
+  showAllBtn.textContent = state.showAllCols ? 'Show changed only' : t_.showAllCols;
+  document.getElementById('preview-note-text').textContent = t_.previewNote;
+
+  document.getElementById('process-btn').textContent = t_.processBtn;
+  document.getElementById('start-over-btn').textContent = t_.startOver;
+  document.getElementById('preview-headline').textContent = t_.previewHeadline;
+}
+
+// ── Render fuzzy confirm ─────────────────────────────────────────
+function renderFuzzyConfirm(pairs) {
+  const area = document.getElementById('fuzzy-confirm-area');
+  area.style.display = 'block';
+  document.getElementById('fuzzy-hdr').textContent = t.fuzzyConfirmHdr;
+  document.getElementById('fuzzy-sub').textContent = t.fuzzyConfirmSub;
+  document.getElementById('fuzzy-confirm-btn').textContent = t.fuzzyConfirmBtn;
+
+  const list = document.getElementById('fuzzy-pairs-list');
+  list.innerHTML = '';
+  pairs.forEach((pair, pi) => {
+    const div = document.createElement('div');
+    div.className = 'fuzzy-pair-row';
+    div.innerHTML = `
+      <input type="checkbox" id="fp-${pi}" data-pair="${pi}" checked>
+      <div class="fuzzy-pair-text">
+        <label for="fp-${pi}">
+          <strong>${pair.a}</strong><br>
+          <span style="color:var(--text3)">vs</span> ${pair.b}
+        </label>
+      </div>
+      <span class="fuzzy-pair-score">${pair.sim}% match</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ── Process full file (transition to download) ───────────────────
+function processFullFile() {
+  const rowCount = state.cleanedRows.length;
+  if (rowCount > 1000) {
+    document.getElementById('progress-wrap').style.display = 'block';
+    let p = 0;
+    const iv = setInterval(() => {
+      p = Math.min(p + 10, 95);
+      setProgress(p);
+    }, 80);
+    setTimeout(() => {
+      clearInterval(iv);
+      setProgress(100);
+      setTimeout(() => showDownload(), 300);
+    }, 900);
+  } else {
+    showDownload();
+  }
+}
+
+function showDownload() {
+  const sec = ((Date.now() - state.startTime) / 1000).toFixed(1);
+  const orig  = state.parsedRows.length;
+  const clean = state.cleanedRows.length;
+  const removed = orig - clean;
+
+  const summary = fmt(t.summaryLine, {
+    orig: orig.toLocaleString(),
+    clean: clean.toLocaleString(),
+    removed: removed.toLocaleString(),
+    sec
+  });
+  document.getElementById('dl-summary').innerHTML = summary;
+  document.getElementById('dl-csv-btn').textContent = t.downloadCsv;
+  document.getElementById('excel-toggle-lbl').textContent = t.downloadXlsx;
+  document.getElementById('dl-xlsx-btn').textContent = t.downloadXlsx;
+  document.getElementById('clean-another-btn').textContent = t.cleanAnother;
+
+  showSection('download');
+
+  // Store for win redirect
+  state.finalStats = { rows: clean, removed, seconds: sec };
+}
+
+// ── CSV download ─────────────────────────────────────────────────
+function downloadCSV() {
+  const { cleanedRows, cleanedHeaders, originalFilename } = state;
+  const csv = Papa.unparse({ fields: cleanedHeaders, data: cleanedRows });
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+
+  // Filename sanitization
+  const baseName = originalFilename.replace(/\.[^.]+$/, '');
+  const safe = baseName.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const filename = (safe || 'file') + '-cleaned.csv';
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  // Redirect to win.html after 1 second
+  const { rows, removed, seconds } = state.finalStats;
+  const crmName = state.crmName;
+  setTimeout(() => {
+    window.location.href = 'win.html?rows=' + rows +
+      '&removed=' + removed +
+      '&seconds=' + seconds +
+      '&crm=' + encodeURIComponent(crmName);
+  }, 1000);
+}
+
+// ── Excel download (lazy SheetJS) ────────────────────────────────
+async function downloadXLSX() {
+  const btn = document.getElementById('dl-xlsx-btn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+
+  if (!state.xlsxLoaded) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+    state.xlsxLoaded = true;
+  }
+
+  const { cleanedRows, cleanedHeaders, originalFilename } = state;
+  const wsData = [cleanedHeaders, ...cleanedRows.map(r => cleanedHeaders.map(h => r[h] ?? ''))];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Cleaned');
+
+  const baseName = originalFilename.replace(/\.[^.]+$/, '');
+  const safe = baseName.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const filename = (safe || 'file') + '-cleaned.xlsx';
+
+  XLSX.writeFile(wb, filename);
+  btn.disabled = false;
+  btn.textContent = t.downloadXlsx;
+
+  // Redirect to win.html after 1 second
+  const { rows, removed, seconds } = state.finalStats;
+  setTimeout(() => {
+    window.location.href = 'win.html?rows=' + rows +
+      '&removed=' + removed +
+      '&seconds=' + seconds +
+      '&crm=' + encodeURIComponent(state.crmName);
+  }, 1000);
+}
+
+// ── Clean another file ───────────────────────────────────────────
+function cleanAnother() {
+  // Reset all state
+  state.parsedRows = [];
+  state.parsedHeaders = [];
+  state.cleanedRows = [];
+  state.cleanedHeaders = [];
+  state.originalFilename = '';
+  state.fuzzyPairs = [];
+  state.showAllCols = false;
+
+  // Reset UI
+  resetFileInput();
+  clearMsgs();
+  hideMsg('msg-file-info');
+
+  // Reset preset + toggles to defaults
+  document.getElementById('crm-preset').value = 'generic';
+  applyQuickCleanSettings();
+
+  // Collapse advanced settings
+  document.getElementById('advanced-settings').style.display = 'none';
+  document.getElementById('adv-chevron').classList.remove('open');
+  document.getElementById('adv-toggle-row').setAttribute('aria-expanded', 'false');
+
+  // Reset Excel toggle
+  document.getElementById('t-excel').checked = false;
+  document.getElementById('dl-xlsx-btn').style.display = 'none';
+
+  showSection('upload');
+}
+
+// ── Access control ───────────────────────────────────────────────
+function checkAccess() {
+  // Check if token already in localStorage BEFORE processing URL params
+  const alreadyHadToken = !!localStorage.getItem(STORAGE_KEY);
+
+  // Check URL param
+  const params = new URLSearchParams(window.location.search);
+  const orderNumber = params.get('order_number');
+
+  if (orderNumber) {
+    if (!alreadyHadToken) {
+      // First purchase — store token and show confirmation banner
+      localStorage.setItem(STORAGE_KEY, orderNumber);
+      const banner = document.getElementById('payment-banner');
+      banner.textContent = t.paymentConfirmed;
+      banner.style.display = 'block';
+      setTimeout(() => { banner.style.display = 'none'; }, 3000);
+    } else {
+      localStorage.setItem(STORAGE_KEY, orderNumber);
+    }
+    // Clean URL
+    history.replaceState(null, '', window.location.pathname);
+  }
+
+  const token = localStorage.getItem(STORAGE_KEY);
+  if (token) {
+    unlockTool();
+  } else {
+    showLocked();
+  }
+}
+
+function unlockTool() {
+  document.getElementById('locked-view').style.display = 'none';
+  document.getElementById('tool-view').style.display = 'block';
+  document.getElementById('feedback-btn').style.display = 'block';
+}
+
+function showLocked() {
+  document.getElementById('locked-view').style.display = 'flex';
+  document.getElementById('tool-view').style.display = 'none';
+  document.getElementById('feedback-btn').style.display = 'none';
+}
+
+// ── i18n population ──────────────────────────────────────────────
+function populateI18n() {
+  document.getElementById('privacy-banner').textContent = t.privacyBanner;
+  document.getElementById('locked-headline').textContent = t.lockedHeadline;
+  document.getElementById('locked-sub').textContent = t.lockedSubhead;
+  document.getElementById('locked-cta').textContent = t.lockedCta;
+  document.getElementById('locked-cta').href = LS_CHECKOUT_URL;
+  document.getElementById('already-paid-btn').textContent = t.alreadyPaid;
+  document.getElementById('drop-zone-text').textContent = t.dropZone;
+  document.getElementById('select-file-btn').textContent = t.selectFile;
+  document.getElementById('paste-toggle-btn').textContent = t.pasteToggle;
+  document.getElementById('quick-clean-btn').textContent = t.quickClean;
+  document.getElementById('quick-clean-sub').textContent = t.quickCleanSub;
+  document.getElementById('adv-toggle-label').textContent = t.advancedToggle;
+  document.getElementById('preset-section-lbl').textContent = 'CRM Preset';
+  document.getElementById('preset-lbl').textContent = t.presetLabel;
+  document.getElementById('opt-generic').textContent = t.presetGeneric;
+  document.getElementById('opt-hubspot').textContent = t.presetHubSpot;
+  document.getElementById('opt-salesforce').textContent = t.presetSalesforce;
+  document.getElementById('opt-apollo').textContent = t.presetApollo;
+  document.getElementById('opt-mailchimp').textContent = t.presetMailchimp;
+  document.getElementById('clean-settings-btn').textContent = t.cleanWithSettings;
+  document.getElementById('processing-text').textContent = t.processingMsg;
+  document.getElementById('feedback-btn').textContent = t.feedbackBtn;
+  document.getElementById('feedback-title').textContent = t.feedbackTitle;
+  document.getElementById('fb-type-lbl').textContent = t.feedbackTypeLbl;
+  document.getElementById('opt-bug').textContent = t.feedbackTypeBug;
+  document.getElementById('opt-feature').textContent = t.feedbackTypeFeature;
+  document.getElementById('opt-other').textContent = t.feedbackTypeOther;
+  document.getElementById('fb-msg-lbl').textContent = t.feedbackMsgLbl;
+  document.getElementById('fb-email-lbl').textContent = t.feedbackEmailLbl;
+  document.getElementById('fb-submit-btn').textContent = t.feedbackSubmit;
+  document.getElementById('recovery-title').textContent = t.recoveryTitle;
+  document.getElementById('recovery-email-lbl').textContent = t.recoveryEmailLbl;
+  document.getElementById('cookie-text').textContent = t.cookieNotice;
+  document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
+  document.getElementById('adjust-settings-btn').textContent = t.adjustSettings;
+}
+
+// ── Event wiring ─────────────────────────────────────────────────
+function bindEvents() {
+  // File input
+  const fileInput = document.getElementById('file-input');
+  document.getElementById('select-file-btn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  // Drag and drop
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  // Paste toggle
+  document.getElementById('paste-toggle-btn').addEventListener('click', () => {
+    const pa = document.getElementById('paste-area');
+    const visible = pa.style.display !== 'none';
+    pa.style.display = visible ? 'none' : 'block';
+    if (!visible) pa.focus();
+  });
+
+  // Paste area — load on any content + trigger on Quick Clean
+  document.getElementById('paste-area').addEventListener('input', () => {
+    const val = document.getElementById('paste-area').value.trim();
+    if (val && state.parsedRows.length === 0) {
+      clearMsgs();
+      // Show Quick Clean area only (no parse yet — parse on Clean)
+      document.getElementById('quick-clean-area').style.display = 'block';
+    }
+  });
+
+  // Quick Clean
+  document.getElementById('quick-clean-btn').addEventListener('click', () => {
+    if (state.parsedRows.length === 0) {
+      const pasteVal = document.getElementById('paste-area').value.trim();
+      if (pasteVal) {
+        clearMsgs();
+        state.originalFilename = 'pasted-data.csv';
+        processCSVText(pasteVal, 'pasted-data.csv');
+        if (state.parsedRows.length === 0) return; // parse failed
+      } else {
+        document.getElementById('file-input').click();
+        return;
+      }
+    }
+    applyQuickCleanSettings();
+    state.crmName = 'CSV';
+    runCleaning(getSettings());
+  });
+
+  // Advanced settings toggle
+  const advRow = document.getElementById('adv-toggle-row');
+  const advSettings = document.getElementById('advanced-settings');
+  const advChevron = document.getElementById('adv-chevron');
+  function toggleAdv() {
+    const open = advSettings.style.display !== 'none';
+    advSettings.style.display = open ? 'none' : 'block';
+    advChevron.classList.toggle('open', !open);
+    advRow.setAttribute('aria-expanded', String(!open));
+  }
+  advRow.addEventListener('click', toggleAdv);
+  advRow.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAdv(); } });
+
+  // Preset change
+  document.getElementById('crm-preset').addEventListener('change', e => {
+    applyPreset(e.target.value);
+  });
+
+  // Clean with settings
+  document.getElementById('clean-settings-btn').addEventListener('click', () => {
+    if (state.parsedRows.length === 0) {
+      const pasteVal = document.getElementById('paste-area').value.trim();
+      if (pasteVal) {
+        clearMsgs();
+        state.originalFilename = 'pasted-data.csv';
+        processCSVText(pasteVal, 'pasted-data.csv');
+        if (state.parsedRows.length === 0) return;
+      } else {
+        showMsg('msg-file-err', 'Please select or paste a CSV file first.');
+        return;
+      }
+    }
+    const preset = document.getElementById('crm-preset').value;
+    state.crmName = preset === 'generic' ? 'CSV' :
+      (preset === 'hubspot' ? 'HubSpot' :
+      preset === 'salesforce' ? 'Salesforce' :
+      preset === 'apollo' ? 'Apollo' :
+      preset === 'mailchimp' ? 'Mailchimp' : 'CSV');
+    runCleaning(getSettings());
+  });
+
+  // Show all columns toggle
+  document.getElementById('show-all-btn').addEventListener('click', () => {
+    state.showAllCols = !state.showAllCols;
+    renderPreview(state.fuzzyPairs.length > 0);
+  });
+
+  // Fuzzy confirm
+  document.getElementById('fuzzy-confirm-btn').addEventListener('click', () => {
+    // Remove unchecked rows
+    const checkboxes = document.querySelectorAll('#fuzzy-pairs-list input[type="checkbox"]');
+    const toRemove = new Set();
+    checkboxes.forEach(cb => {
+      if (cb.checked) {
+        const pi = parseInt(cb.dataset.pair);
+        toRemove.add(state.fuzzyPairs[pi].j); // keep first (i), remove second (j)
+      }
+    });
+    state.cleanedRows = state.cleanedRows.filter((_, idx) => !toRemove.has(idx));
+    state.cleanStats.dupes = (state.cleanStats.dupes || 0) + toRemove.size;
+    state.fuzzyPairs = [];
+    document.getElementById('fuzzy-confirm-area').style.display = 'none';
+    renderPreview(false);
+  });
+
+  // Process full file
+  document.getElementById('process-btn').addEventListener('click', () => {
+    // If fuzzy confirm still shown, confirm first
+    if (document.getElementById('fuzzy-confirm-area').style.display !== 'none') {
+      document.getElementById('fuzzy-confirm-btn').click();
+      return;
+    }
+    processFullFile();
+  });
+
+  // Start over
+  document.getElementById('start-over-btn').addEventListener('click', cleanAnother);
+  document.getElementById('adjust-settings-btn').addEventListener('click', () => {
+    showSection('upload');
+    document.getElementById('advanced-settings').style.display = 'block';
+    document.getElementById('adv-chevron').classList.add('open');
+  });
+
+  // Download CSV
+  document.getElementById('dl-csv-btn').addEventListener('click', downloadCSV);
+
+  // Excel toggle
+  document.getElementById('t-excel').addEventListener('change', e => {
+    const xlsxBtn = document.getElementById('dl-xlsx-btn');
+    xlsxBtn.style.display = e.target.checked ? 'block' : 'none';
+  });
+  document.getElementById('dl-xlsx-btn').addEventListener('click', downloadXLSX);
+
+  // Clean another
+  document.getElementById('clean-another-btn').addEventListener('click', cleanAnother);
+
+  // Already paid
+  document.getElementById('already-paid-btn').addEventListener('click', () => {
+    document.getElementById('recovery-modal').style.display = 'flex';
+    document.getElementById('recovery-email-input').focus();
+  });
+
+  // Recovery modal
+  document.getElementById('recovery-close').addEventListener('click', () => {
+    document.getElementById('recovery-modal').style.display = 'none';
+  });
+  document.getElementById('recovery-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('recovery-modal')) {
+      document.getElementById('recovery-modal').style.display = 'none';
+    }
+  });
+  document.getElementById('recovery-submit-btn').addEventListener('click', () => {
+    const emailVal = document.getElementById('recovery-email-input').value.trim();
+    if (!emailVal) return;
+    const resultEl = document.getElementById('recovery-result');
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = `
+      <p>${t.recoveryMsg}</p>
+      <p class="recovery-fallback">${t.recoveryFallback}</p>
+    `;
+  });
+
+  // Feedback button
+  document.getElementById('feedback-btn').addEventListener('click', () => {
+    document.getElementById('feedback-modal').style.display = 'flex';
+  });
+
+  // Feedback modal close
+  document.getElementById('feedback-close').addEventListener('click', () => {
+    document.getElementById('feedback-modal').style.display = 'none';
+  });
+  document.getElementById('feedback-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('feedback-modal')) {
+      document.getElementById('feedback-modal').style.display = 'none';
+    }
+  });
+
+  // Feedback message char count + submit enable
+  const fbMsg = document.getElementById('fb-msg');
+  fbMsg.addEventListener('input', () => {
+    const len = fbMsg.value.length;
+    document.getElementById('fb-char-hint').textContent = len + '/500';
+    updateFbSubmit();
+  });
+  document.getElementById('fb-type').addEventListener('change', updateFbSubmit);
+
+  function updateFbSubmit() {
+    const hasType = document.getElementById('fb-type').value !== '';
+    const msgLen = document.getElementById('fb-msg').value.length;
+    document.getElementById('fb-submit-btn').disabled = !(hasType && msgLen >= 10);
+  }
+
+  // Feedback submit
+  document.getElementById('fb-submit-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('fb-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    const msgResult = document.getElementById('fb-msg-result');
+    msgResult.style.display = 'none';
+
+    const payload = {
+      type: document.getElementById('fb-type').value,
+      message: document.getElementById('fb-msg').value,
+      email: document.getElementById('fb-email').value || undefined
+    };
+
+    try {
+      const res = await fetch(FORMSPARK_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        msgResult.textContent = t.feedbackSuccess;
+        msgResult.className = 'modal-msg success';
+        msgResult.style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('feedback-modal').style.display = 'none';
+          // Reset form
+          document.getElementById('fb-type').value = '';
+          document.getElementById('fb-msg').value = '';
+          document.getElementById('fb-email').value = '';
+          document.getElementById('fb-char-hint').textContent = '0/500';
+          msgResult.style.display = 'none';
+          btn.textContent = t.feedbackSubmit;
+        }, 3000);
+      } else {
+        throw new Error('Non-OK response');
+      }
+    } catch {
+      msgResult.textContent = t.feedbackError;
+      msgResult.className = 'modal-msg error';
+      msgResult.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = t.feedbackSubmit;
+    }
+  });
+
+  // Cookie notice
+  const COOKIE_KEY = 'cleanlist_cookie_dismissed';
+  if (!localStorage.getItem(COOKIE_KEY)) {
+    document.getElementById('cookie-notice').style.display = 'flex';
+  }
+  document.getElementById('cookie-dismiss').addEventListener('click', () => {
+    localStorage.setItem(COOKIE_KEY, '1');
+    document.getElementById('cookie-notice').style.display = 'none';
+  });
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+function init() {
+  populateI18n();
+  bindEvents();
+  checkAccess();
+  // Ensure upload section visible on tool load
+  showSection('upload');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

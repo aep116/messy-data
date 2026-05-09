@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms of Service — CleanList</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1120;
+  --surface: #131f2e;
+  --border: #2a3a52;
+  --text: #dce8f5;
+  --text2: #90a8c4;
+  --accent: #4e87f5;
+  --font: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.7;
+  padding-bottom: 80px;
+}
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.updated { color: var(--text2); font-size: 13px; margin-bottom: 40px; }
+h2 {
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 32px;
+  margin-bottom: 10px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+p { color: var(--text2); margin-bottom: 12px; }
+a { color: var(--accent); }
+.cookie-notice {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text2);
+  z-index: 100;
+}
+.cookie-dismiss {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="https://cleanlistapp.com" class="brand">CleanList</a>
+</div>
+
+<div class="container">
+  <h1 id="tos-title"></h1>
+  <p class="updated" id="tos-updated"></p>
+
+  <h2 id="s1-title"></h2>
+  <p id="s1-body"></p>
+
+  <h2 id="s2-title"></h2>
+  <p id="s2-body"></p>
+
+  <h2 id="s3-title"></h2>
+  <p id="s3-body"></p>
+
+  <h2 id="s4-title"></h2>
+  <p id="s4-body"></p>
+
+  <h2 id="s5-title"></h2>
+  <p id="s5-body"></p>
+
+  <h2 id="s6-title"></h2>
+  <p id="s6-body"></p>
+
+  <h2 id="s7-title"></h2>
+  <p id="s7-body"></p>
+</div>
+
+<div class="cookie-notice" id="cookie-notice" style="display:none">
+  <span id="cookie-text"></span>
+  <button class="cookie-dismiss" id="cookie-dismiss"></button>
+</div>
+
+<script>
+const i18n = {
+  en: {
+    tosTitle: 'Terms of Service',
+    tosUpdated: 'Last updated: May 2026',
+    s1Title: 'Product',
+    s1Body: 'CleanList is a one-time purchase browser-based CSV cleaning tool. All processing occurs locally in your browser. No data is uploaded to any server.',
+    s2Title: 'License',
+    s2Body: 'A one-time purchase grants a non-exclusive license for personal use. You may not resell, sublicense, or distribute the tool.',
+    s3Title: 'Refunds',
+    s3Body: 'All sales are final, except where required by applicable law (including EU consumer rights). To request a refund, contact support@cleanlistapp.com with your order confirmation.',
+    s4Title: 'Acceptable Use',
+    s4Body: 'Do not use CleanList to process illegally obtained data. You are responsible for ensuring you have the right to process any data you upload or paste into the tool.',
+    s5Title: 'No Warranty',
+    s5Body: 'CleanList is provided as-is. We make no guarantees on cleaning accuracy. Always review the preview before downloading. We recommend keeping a backup of your original file.',
+    s6Title: 'Limitation of Liability',
+    s6Body: 'SpiralWorld LLC is not liable for data loss or corruption from use of the tool. Use at your own risk. In no event shall our liability exceed the amount you paid for the product.',
+    s7Title: 'Jurisdiction',
+    s7Body: 'These terms are governed by the laws of Pennsylvania, USA. Any disputes will be resolved in the courts of Pennsylvania.',
+    cookieNotice: 'This site uses cookies for payment processing only. No tracking.',
+    cookieDismiss: 'Got it'
+  }
+};
+i18n.de = { ...i18n.en };
+i18n.pt = { ...i18n.en };
+
+function detectLang() {
+  const l = navigator.language || 'en';
+  if (l.startsWith('de')) return 'de';
+  if (l.startsWith('pt')) return 'pt';
+  return 'en';
+}
+const LANG = detectLang();
+const t = i18n[LANG];
+
+document.getElementById('tos-title').textContent = t.tosTitle;
+document.getElementById('tos-updated').textContent = t.tosUpdated;
+document.getElementById('s1-title').textContent = t.s1Title;
+document.getElementById('s1-body').textContent = t.s1Body;
+document.getElementById('s2-title').textContent = t.s2Title;
+document.getElementById('s2-body').textContent = t.s2Body;
+document.getElementById('s3-title').textContent = t.s3Title;
+document.getElementById('s3-body').innerHTML = t.s3Body.replace('support@cleanlistapp.com', '<a href="mailto:support@cleanlistapp.com">support@cleanlistapp.com</a>');
+document.getElementById('s4-title').textContent = t.s4Title;
+document.getElementById('s4-body').textContent = t.s4Body;
+document.getElementById('s5-title').textContent = t.s5Title;
+document.getElementById('s5-body').textContent = t.s5Body;
+document.getElementById('s6-title').textContent = t.s6Title;
+document.getElementById('s6-body').textContent = t.s6Body;
+document.getElementById('s7-title').textContent = t.s7Title;
+document.getElementById('s7-body').textContent = t.s7Body;
+
+document.getElementById('cookie-text').textContent = t.cookieNotice;
+document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
+
+const COOKIE_KEY = 'cleanlist_cookie_dismissed';
+if (!localStorage.getItem(COOKIE_KEY)) {
+  document.getElementById('cookie-notice').style.display = 'flex';
+}
+document.getElementById('cookie-dismiss').addEventListener('click', () => {
+  localStorage.setItem(COOKIE_KEY, '1');
+  document.getElementById('cookie-notice').style.display = 'none';
+});
+</script>
+</body>
+</html>

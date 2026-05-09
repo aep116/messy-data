@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your list is clean — CleanList</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --bg: #0b1120;
+  --surface: #131f2e;
+  --surface2: #1a2840;
+  --border: #2a3a52;
+  --text: #dce8f5;
+  --text2: #90a8c4;
+  --text3: #58789a;
+  --accent: #4e87f5;
+  --success: #2dd4a2;
+  --warn: #f59e0b;
+  --cta: linear-gradient(135deg, #4e87f5 0%, #2345c5 100%);
+  --font: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 24px 80px;
+}
+.win-wrap {
+  max-width: 560px;
+  width: 100%;
+}
+.headline {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 32px;
+  text-align: center;
+}
+.stat-block {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+.stat-item {
+  background: var(--surface);
+  padding: 20px 16px;
+  text-align: center;
+}
+.stat-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--success);
+  font-family: var(--mono);
+  display: block;
+  margin-bottom: 4px;
+}
+.stat-lbl {
+  font-size: 12px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Shareable stats card */
+.card-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.card-label {
+  font-size: 12px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+#stats-card {
+  background: #0b1120;
+  border: 1px solid #2a3a52;
+  padding: 28px 24px;
+  position: relative;
+}
+.card-brand {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+.card-stats {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 16px;
+}
+.card-stat-item { }
+.card-stat-num {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2dd4a2;
+  font-family: var(--mono);
+  display: block;
+  line-height: 1;
+}
+.card-stat-lbl {
+  font-size: 11px;
+  color: #90a8c4;
+  margin-top: 4px;
+}
+.card-url {
+  font-size: 12px;
+  color: #58789a;
+  font-family: var(--mono);
+}
+
+/* X post textarea */
+.x-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.x-label {
+  font-size: 12px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+#x-text {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px;
+  resize: none;
+  min-height: 100px;
+}
+.x-counter {
+  font-size: 12px;
+  color: var(--text3);
+  text-align: right;
+  margin-top: 6px;
+}
+.x-counter.warn { color: var(--warn); }
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  background: var(--cta);
+  color: #fff;
+  border: none;
+  padding: 16px;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: block;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary {
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 13px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: block;
+  text-align: center;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+.btn-download {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 12px;
+}
+.skip-link {
+  display: block;
+  text-align: center;
+  color: var(--text3);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  width: 100%;
+  padding: 4px;
+}
+
+.cookie-notice {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text2);
+  z-index: 100;
+}
+.cookie-dismiss {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .stat-block { grid-template-columns: 1fr; }
+  .card-stats { flex-direction: column; gap: 16px; }
+  .headline { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<div class="win-wrap">
+  <h1 class="headline" id="win-headline"></h1>
+
+  <div class="stat-block">
+    <div class="stat-item">
+      <span class="stat-num" id="stat-rows">—</span>
+      <span class="stat-lbl" id="stat-rows-lbl"></span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" id="stat-removed">—</span>
+      <span class="stat-lbl" id="stat-removed-lbl"></span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" id="stat-time">—</span>
+      <span class="stat-lbl" id="stat-time-lbl"></span>
+    </div>
+  </div>
+
+  <!-- Shareable stats card -->
+  <div class="card-wrap">
+    <div class="card-label">Shareable card</div>
+    <div id="stats-card">
+      <div class="card-brand" id="card-brand"></div>
+      <div class="card-stats">
+        <div class="card-stat-item">
+          <span class="card-stat-num" id="card-rows">—</span>
+          <div class="card-stat-lbl" id="card-rows-lbl"></div>
+        </div>
+        <div class="card-stat-item">
+          <span class="card-stat-num" id="card-removed">—</span>
+          <div class="card-stat-lbl" id="card-removed-lbl"></div>
+        </div>
+        <div class="card-stat-item">
+          <span class="card-stat-num" id="card-time">—</span>
+          <div class="card-stat-lbl" id="card-time-lbl"></div>
+        </div>
+      </div>
+      <div class="card-url" id="card-url"></div>
+    </div>
+    <button class="btn-download" id="download-card-btn"></button>
+  </div>
+
+  <!-- X post -->
+  <div class="x-section">
+    <div class="x-label">Post on X</div>
+    <textarea id="x-text" readonly></textarea>
+    <div class="x-counter" id="x-counter">0/280</div>
+    <button class="btn-primary" id="post-x-btn" style="margin-top:12px;margin-bottom:0"></button>
+  </div>
+
+  <a href="app.html" class="btn-secondary" id="clean-another-btn"></a>
+  <button class="skip-link" id="skip-btn" onclick="window.location.href='app.html'"></button>
+</div>
+
+<div class="cookie-notice" id="cookie-notice" style="display:none">
+  <span id="cookie-text"></span>
+  <button class="cookie-dismiss" id="cookie-dismiss"></button>
+</div>
+
+<script>
+const i18n = {
+  en: {
+    winHeadline: 'Your list is clean.',
+    winStatRows: '{n}-row {crm} export',
+    winStatRemoved: '{n} duplicates removed',
+    winStatTime: 'Done in {n} seconds',
+    winCardBrand: 'CleanList',
+    winCardUrl: 'cleanlistapp.com',
+    winDownloadCard: 'Download card',
+    winPostX: 'Post on X',
+    winXText: 'Just cleaned a {rows}-row {crm} export in {seconds} seconds with CleanList.\n{removed} duplicates removed. Nothing uploaded. No account. $39 one-time.\n\ncleanlistapp.com',
+    winCleanAnother: 'Clean another file',
+    winSkip: 'Skip',
+    winCharCount: '{n}/280',
+    cookieNotice: 'This site uses cookies for payment processing only. No tracking.',
+    cookieDismiss: 'Got it'
+  }
+};
+i18n.de = { ...i18n.en };
+i18n.pt = { ...i18n.en };
+
+function detectLang() {
+  const l = navigator.language || 'en';
+  if (l.startsWith('de')) return 'de';
+  if (l.startsWith('pt')) return 'pt';
+  return 'en';
+}
+const LANG = detectLang();
+const t = i18n[LANG];
+
+function fmt(str, vars) {
+  return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : '{' + k + '}');
+}
+
+// Parse URL params with fallbacks
+const params = new URLSearchParams(window.location.search);
+const rows = params.get('rows') || 'your file';
+const removed = params.get('removed') || 'duplicates';
+const seconds = params.get('seconds') || 'seconds';
+const crm = params.get('crm') || 'CSV';
+
+// Render headline
+document.getElementById('win-headline').textContent = t.winHeadline;
+
+// Stat block
+document.getElementById('stat-rows').textContent = rows;
+document.getElementById('stat-rows-lbl').textContent = crm + ' rows cleaned';
+document.getElementById('stat-removed').textContent = removed;
+document.getElementById('stat-removed-lbl').textContent = 'duplicates removed';
+document.getElementById('stat-time').textContent = seconds + 's';
+document.getElementById('stat-time-lbl').textContent = 'processing time';
+
+// Stats card
+document.getElementById('card-brand').textContent = t.winCardBrand;
+document.getElementById('card-rows').textContent = rows;
+document.getElementById('card-rows-lbl').textContent = crm + ' rows cleaned';
+document.getElementById('card-removed').textContent = removed;
+document.getElementById('card-removed-lbl').textContent = 'duplicates removed';
+document.getElementById('card-time').textContent = seconds + 's';
+document.getElementById('card-time-lbl').textContent = 'processing time';
+document.getElementById('card-url').textContent = t.winCardUrl;
+
+// Buttons
+document.getElementById('download-card-btn').textContent = t.winDownloadCard;
+document.getElementById('post-x-btn').textContent = t.winPostX;
+document.getElementById('clean-another-btn').textContent = t.winCleanAnother;
+document.getElementById('skip-btn').textContent = t.winSkip;
+
+// X post text
+const xText = fmt(t.winXText, { rows, crm, seconds, removed });
+const xTextEl = document.getElementById('x-text');
+xTextEl.value = xText;
+
+// Character counter
+function updateCounter() {
+  const len = xTextEl.value.length;
+  const counterEl = document.getElementById('x-counter');
+  counterEl.textContent = fmt(t.winCharCount, { n: len });
+  counterEl.className = 'x-counter' + (len >= 260 ? ' warn' : '');
+  document.getElementById('post-x-btn').disabled = len > 280;
+}
+updateCounter();
+xTextEl.addEventListener('input', updateCounter);
+
+// Post on X
+document.getElementById('post-x-btn').addEventListener('click', () => {
+  const text = encodeURIComponent(xTextEl.value);
+  window.open('https://twitter.com/intent/tweet?text=' + text, '_blank');
+});
+
+// Download card
+document.getElementById('download-card-btn').addEventListener('click', async () => {
+  const card = document.getElementById('stats-card');
+  try {
+    const canvas = await html2canvas(card, {
+      backgroundColor: '#0b1120',
+      scale: 2,
+      logging: false
+    });
+    const link = document.createElement('a');
+    link.download = 'cleanlist-stats.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch (e) {
+    console.error('Card download failed:', e);
+  }
+});
+
+// Cookie notice
+document.getElementById('cookie-text').textContent = t.cookieNotice;
+document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
+const COOKIE_KEY = 'cleanlist_cookie_dismissed';
+if (!localStorage.getItem(COOKIE_KEY)) {
+  document.getElementById('cookie-notice').style.display = 'flex';
+}
+document.getElementById('cookie-dismiss').addEventListener('click', () => {
+  localStorage.setItem(COOKIE_KEY, '1');
+  document.getElementById('cookie-notice').style.display = 'none';
+});
+</script>
+</body>
+</html>

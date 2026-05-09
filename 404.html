@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page not found — CleanList</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b1120;
+  --surface: #131f2e;
+  --border: #2a3a52;
+  --text: #dce8f5;
+  --text2: #90a8c4;
+  --accent: #4e87f5;
+  --cta: linear-gradient(135deg, #4e87f5 0%, #2345c5 100%);
+  --font: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 48px 40px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+.code {
+  font-size: 72px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+p {
+  color: var(--text2);
+  font-size: 15px;
+  margin-bottom: 32px;
+}
+.btn {
+  display: inline-block;
+  background: var(--cta);
+  color: #fff;
+  text-decoration: none;
+  padding: 12px 28px;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+.cookie-notice {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text2);
+  z-index: 100;
+}
+.cookie-dismiss {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 12px;
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="code">404</div>
+  <h1 id="nf-headline"></h1>
+  <p id="nf-sub"></p>
+  <a href="https://cleanlistapp.com" class="btn" id="nf-link"></a>
+</div>
+
+<div class="cookie-notice" id="cookie-notice" style="display:none">
+  <span id="cookie-text"></span>
+  <button class="cookie-dismiss" id="cookie-dismiss"></button>
+</div>
+
+<script>
+const i18n = {
+  en: {
+    notFoundHeadline: 'Page not found',
+    notFoundSub: "The page you're looking for doesn't exist.",
+    notFoundLink: 'Back to CleanList',
+    cookieNotice: 'This site uses cookies for payment processing only. No tracking.',
+    cookieDismiss: 'Got it'
+  }
+};
+i18n.de = { ...i18n.en };
+i18n.pt = { ...i18n.en };
+
+function detectLang() {
+  const l = navigator.language || 'en';
+  if (l.startsWith('de')) return 'de';
+  if (l.startsWith('pt')) return 'pt';
+  return 'en';
+}
+const LANG = detectLang();
+const t = i18n[LANG];
+
+document.getElementById('nf-headline').textContent = t.notFoundHeadline;
+document.getElementById('nf-sub').textContent = t.notFoundSub;
+document.getElementById('nf-link').textContent = t.notFoundLink;
+document.getElementById('cookie-text').textContent = t.cookieNotice;
+document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
+
+const COOKIE_KEY = 'cleanlist_cookie_dismissed';
+if (!localStorage.getItem(COOKIE_KEY)) {
+  document.getElementById('cookie-notice').style.display = 'flex';
+}
+document.getElementById('cookie-dismiss').addEventListener('click', () => {
+  localStorage.setItem(COOKIE_KEY, '1');
+  document.getElementById('cookie-notice').style.display = 'none';
+});
+</script>
+</body>
+</html>
