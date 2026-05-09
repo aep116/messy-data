@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fast-levenshtein@3.0.0/levenshtein.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/fast-levenshtein@3.0.0/levenshtein.js" defer></script>
 <style>
 :root {
   --bg: #0b1120;
@@ -790,7 +790,7 @@ select.field-input { appearance: auto; cursor: pointer; }
 <div id="privacy-banner"></div>
 
 <!-- Payment confirmation banner (first-purchase only) -->
-<div id="payment-banner" style="display:none"></div>
+<div id="payment-banner" role="alert" aria-live="assertive" style="display:none"></div>
 
 <!-- ── LOCKED VIEW ──────────────────────────────────────────────── -->
 <div id="locked-view">
@@ -926,9 +926,9 @@ select.field-input { appearance: auto; cursor: pointer; }
         <button class="btn-start-over" id="start-over-btn"></button>
       </div>
 
-      <div class="stats-block" id="stats-block"></div>
+      <div class="stats-block" id="stats-block" aria-live="polite" aria-atomic="false"></div>
 
-      <div id="already-clean-msg"></div>
+      <div id="already-clean-msg" role="status" aria-live="polite"></div>
 
       <!-- Fuzzy confirm -->
       <div id="fuzzy-confirm-area">
@@ -983,9 +983,10 @@ select.field-input { appearance: auto; cursor: pointer; }
       </div>
       <div class="msg msg-err" id="xlsx-error" role="alert" aria-live="assertive" style="display:none"></div>
 
-      <label class="keep-settings-row" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:8px;cursor:pointer">
+      <label class="toggle-row" style="border:none;padding:8px 0;margin-bottom:8px">
         <input type="checkbox" id="keep-settings-cb">
-        <span id="keep-settings-lbl"></span>
+        <span class="toggle-switch"></span>
+        <span class="toggle-lbl" id="keep-settings-lbl"></span>
       </label>
       <button class="btn-clean-another" id="clean-another-btn"></button>
     </div><!-- /download-section -->
@@ -1012,7 +1013,7 @@ select.field-input { appearance: auto; cursor: pointer; }
     <div class="field-row">
       <label class="field-lbl" id="recovery-email-lbl"></label>
       <input type="email" class="field-input" id="recovery-email-input" placeholder="you@example.com">
-      <div id="recovery-email-error" style="display:none;font-size:12px;color:var(--warn);margin-top:4px;line-height:1.4"></div>
+      <div id="recovery-email-error" role="alert" aria-live="assertive" style="display:none;font-size:12px;color:var(--warn);margin-top:4px;line-height:1.4"></div>
     </div>
     <button class="btn-modal-submit" id="recovery-submit-btn">Submit</button>
     <div class="recovery-result" id="recovery-result"></div>

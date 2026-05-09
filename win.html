@@ -385,6 +385,8 @@ document.getElementById('card-brand').textContent = t.winCardBrand;
 document.getElementById('card-rows').textContent = rows;
 document.getElementById('card-rows-lbl').textContent = crm + ' rows cleaned';
 if (isAlreadyClean) {
+  document.getElementById('stat-removed').textContent = '';
+  document.getElementById('stat-removed-lbl').textContent = t.cardAlreadyClean;
   document.getElementById('card-removed').textContent = '';
   document.getElementById('card-removed-lbl').textContent = t.cardAlreadyClean;
 } else {
@@ -414,7 +416,7 @@ function updateCounter() {
   const counterEl = document.getElementById('x-counter');
   counterEl.textContent = fmt(t.winCharCount, { n: len });
   counterEl.className = 'x-counter' + (len >= 260 ? ' warn' : '');
-  document.getElementById('post-x-btn').disabled = len > 280;
+  document.getElementById('post-x-btn').disabled = len === 0 || len > 280;
 }
 updateCounter();
 xTextEl.addEventListener('input', updateCounter);
