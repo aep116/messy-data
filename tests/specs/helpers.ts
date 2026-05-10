@@ -33,14 +33,32 @@ export async function processAndWaitForDownload(page: Page) {
 }
 
 // Download the cleaned CSV and return its text content (BOM stripped).
+// On iOS Safari the app hides #dl-csv-btn and exposes a blob link (#ios-save-link) instead
+// of triggering a browser download event. Detect the iOS user agent first, then branch.
 export async function downloadCSV(page: Page): Promise<string> {
+  const isIOS = await page.evaluate(() =>
+    /iP(ad|hone|od)/i.test(navigator.userAgent) &&
+    !/CriOS|FxiOS|OPiOS|mercury/i.test(navigator.userAgent)
+  );
+
+  if (isIOS) {
+    await page.click('#dl-csv-btn');
+    const blobUrl = await page.locator('#ios-save-link').evaluate(
+      el => (el as HTMLAnchorElement).href
+    );
+    const content = await page.evaluate(async (url) => {
+      const res = await fetch(url);
+      return res.text();
+    }, blobUrl);
+    return content.startsWith('﻿') ? content.slice(1) : content;
+  }
+
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.click('#dl-csv-btn'),
   ]);
   const filePath = await download.path();
   const content = fs.readFileSync(filePath!, 'utf-8');
-  // Strip UTF-8 BOM if present
   return content.startsWith('﻿') ? content.slice(1) : content;
 }
 
@@ -87,6 +105,52 @@ export function parseCSV(csvText: string): Record<string, string>[] {
     headers.forEach((h, i) => { row[h] = values[i] ?? ''; });
     return row;
   });
+}
+
+// Shared iOS detection used by trigger* helpers.
+async function isIOSSafariUA(page: Page): Promise<boolean> {
+  return page.evaluate(() =>
+    /iP(ad|hone|od)/i.test(navigator.userAgent) &&
+    !/CriOS|FxiOS|OPiOS|mercury/i.test(navigator.userAgent)
+  );
+}
+
+// Click #dl-csv-btn and handle both paths.
+// iOS: waits for #ios-save-link to appear (no download event, no redirect).
+// Desktop: resolves the browser download event.
+export async function triggerDownload(page: Page): Promise<void> {
+  if (await isIOSSafariUA(page)) {
+    await page.click('#dl-csv-btn');
+    await page.locator('#ios-save-link').waitFor({ state: 'visible' });
+    return;
+  }
+  await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#dl-csv-btn'),
+  ]);
+}
+
+// After triggerDownload(), call this to trigger the win.html redirect on iOS.
+// On desktop the redirect fires automatically via setTimeout; this is a no-op.
+export async function triggerContinue(page: Page): Promise<void> {
+  if (await isIOSSafariUA(page)) {
+    await page.click('#ios-continue-btn');
+  }
+}
+
+// Click #dl-csv-btn and return the suggested download filename.
+// iOS: reads #ios-save-link textContent (the filename). Does NOT click Continue.
+// Desktop: reads from the download event's suggestedFilename().
+export async function triggerDownloadGetFilename(page: Page): Promise<string> {
+  if (await isIOSSafariUA(page)) {
+    await page.click('#dl-csv-btn');
+    return (await page.locator('#ios-save-link').textContent()) ?? '';
+  }
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#dl-csv-btn'),
+  ]);
+  return download.suggestedFilename();
 }
 
 // Get the text content of the stats block.

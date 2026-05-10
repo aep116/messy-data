@@ -9,6 +9,9 @@ import {
   downloadCSV,
   parseCSV,
   getStatText,
+  triggerDownload,
+  triggerContinue,
+  triggerDownloadGetFilename,
 } from './helpers';
 
 test.beforeEach(async ({ page }) => {
@@ -76,13 +79,11 @@ test('TC04: win.html receives changed=1 for email-only casing', async ({ page })
   await runQuickClean(page);
   await processAndWaitForDownload(page);
 
-  // Click download — triggers file download + starts 1-sec redirect timer
-  await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#dl-csv-btn'),
-  ]);
+  // Click download — triggers file download + starts 1-sec redirect timer (desktop)
+  // or shows iOS save area + Continue button (iOS).
+  await triggerDownload(page);
+  await triggerContinue(page);
 
-  // Wait for the 1-second setTimeout redirect
   await page.waitForURL(/win\.html/, { timeout: 5000 });
   const params = new URLSearchParams(new URL(page.url()).search);
 
@@ -188,19 +189,39 @@ test('TC09: preserves Unicode characters and includes UTF-8 BOM', async ({ page 
   await runQuickClean(page);
   await processAndWaitForDownload(page);
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#dl-csv-btn'),
-  ]);
-  const filePath = await download.path();
-  const rawContent = fs.readFileSync(filePath!);
+  // On iOS the app serves a blob link; on desktop it triggers a download event.
+  // Either way we need the raw bytes to verify the UTF-8 BOM.
+  const isIOS = await page.evaluate(() =>
+    /iP(ad|hone|od)/i.test(navigator.userAgent) &&
+    !/CriOS|FxiOS|OPiOS|mercury/i.test(navigator.userAgent)
+  );
+
+  let rawBytes: number[];
+  if (isIOS) {
+    await page.click('#dl-csv-btn');
+    const blobUrl = await page.locator('#ios-save-link').evaluate(
+      el => (el as HTMLAnchorElement).href
+    );
+    rawBytes = await page.evaluate(async (url) => {
+      const res = await fetch(url);
+      const buf = await res.arrayBuffer();
+      return Array.from(new Uint8Array(buf));
+    }, blobUrl);
+  } else {
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.click('#dl-csv-btn'),
+    ]);
+    const filePath = await download.path();
+    rawBytes = Array.from(fs.readFileSync(filePath!));
+  }
 
   // First 3 bytes must be UTF-8 BOM: EF BB BF
-  expect(rawContent[0]).toBe(0xEF);
-  expect(rawContent[1]).toBe(0xBB);
-  expect(rawContent[2]).toBe(0xBF);
+  expect(rawBytes[0]).toBe(0xEF);
+  expect(rawBytes[1]).toBe(0xBB);
+  expect(rawBytes[2]).toBe(0xBF);
 
-  const content = rawContent.toString('utf-8').slice(1);
+  const content = Buffer.from(rawBytes).toString('utf-8').slice(1);
   const rows = parseCSV(content);
 
   expect(rows[0].first_name).toBe('José');
@@ -253,12 +274,10 @@ test('TC11: already-clean file uses -verified and sends changed=0', async ({ pag
   const summary = await page.locator('#dl-summary').innerText();
   expect(summary).toMatch(/no changes|identical/i);
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#dl-csv-btn'),
-  ]);
-  expect(download.suggestedFilename()).toContain('-verified');
-  expect(download.suggestedFilename()).not.toContain('-cleaned');
+  const filename = await triggerDownloadGetFilename(page);
+  expect(filename).toContain('-verified');
+  expect(filename).not.toContain('-cleaned');
+  await triggerContinue(page);
 
   await page.waitForURL(/win\.html/, { timeout: 5000 });
   const params = new URLSearchParams(new URL(page.url()).search);
@@ -318,11 +337,8 @@ test('TC14: state resets correctly between clean sessions', async ({ page }) => 
 
   await processAndWaitForDownload(page);
 
-  const [download] = await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#dl-csv-btn'),
-  ]);
-  expect(download.suggestedFilename()).toContain('-verified');
+  const filename = await triggerDownloadGetFilename(page);
+  expect(filename).toContain('-verified');
 });
 
 // ── TC15: clearTimeout — redirect cancelled by cleanAnother() ─────
@@ -331,11 +347,8 @@ test('TC15: cleanAnother cancels win.html redirect setTimeout', async ({ page })
   await runQuickClean(page);
   await processAndWaitForDownload(page);
 
-  // Start download (triggers setTimeout for redirect) then immediately cancel
-  await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#dl-csv-btn'),
-  ]);
+  // Trigger download (desktop: starts 1-sec redirect timer; iOS: shows save area, no timer).
+  await triggerDownload(page);
   // Click clean-another immediately — must fire within the 1-second redirect window
   await page.click('#clean-another-btn');
 
@@ -594,11 +607,8 @@ test('TC25: win.html shows correct removed count after real dedup', async ({ pag
   await runQuickClean(page);
   await processAndWaitForDownload(page);
 
-  // Download triggers the 1-second redirect timer
-  await Promise.all([
-    page.waitForEvent('download'),
-    page.click('#dl-csv-btn'),
-  ]);
+  await triggerDownload(page);
+  await triggerContinue(page);
 
   await page.waitForURL(/win\.html/, { timeout: 5000 });
   const params = new URLSearchParams(new URL(page.url()).search);
