@@ -1,0 +1,6 @@
+first_name,last_name,email
+John,Smith,JOHN@ACME.COM
+John,Smith-Duplicate,john@acme.com
+Jane,Doe,JANE@ACME.COM
+Jane,Doe-Duplicate,jane@acme.com
+Bob,Jones,bob@acme.com

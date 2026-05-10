@@ -668,3 +668,107 @@ test.describe('Access control', () => {
     }
   });
 });
+
+// ── TC28: Email dedup is case-insensitive ─────────────────────────
+test('TC28: email dedup removes case-insensitive duplicates', async ({ page }) => {
+  // Fixture has 5 rows: JOHN@ACME.COM + john@acme.com (dup), JANE@ACME.COM + jane@acme.com (dup), bob@acme.com
+  await uploadCSV(page, '17-email-dedup-case.csv');
+  await runQuickClean(page);
+  await processAndWaitForDownload(page);
+  const csv = await downloadCSV(page);
+  const rows = parseCSV(csv);
+
+  // 2 case-insensitive duplicates removed → 3 rows remain
+  expect(rows.length).toBe(3);
+
+  // Duplicate suffixed rows must be gone
+  expect(rows.find(r => r.last_name === 'Smith-Duplicate')).toBeUndefined();
+  expect(rows.find(r => r.last_name === 'Doe-Duplicate')).toBeUndefined();
+
+  // First occurrences kept; lowercaseEmail applied by Quick Clean
+  expect(rows.find(r => r.last_name === 'Smith')?.email).toBe('john@acme.com');
+  expect(rows.find(r => r.last_name === 'Doe')?.email).toBe('jane@acme.com');
+  expect(rows.find(r => r.last_name === 'Jones')?.email).toBe('bob@acme.com');
+});
+
+// ── TC29: Salesforce preset applies correct transformations ───────
+test('TC29: Salesforce preset title-cases names and preserves email case', async ({ page }) => {
+  await uploadCSV(page, '18-salesforce-preset.csv');
+
+  // Open advanced settings panel (hidden by default)
+  await page.click('#adv-toggle-row');
+  await page.waitForSelector('#advanced-settings', { state: 'visible' });
+
+  // Selecting the preset triggers applyPreset() via change event
+  await page.selectOption('#crm-preset', 'salesforce');
+
+  // Click "Clean with settings"
+  await page.click('#clean-settings-btn');
+  await page.waitForSelector('#preview-section', { state: 'visible' });
+
+  await processAndWaitForDownload(page);
+  const csv = await downloadCSV(page);
+  const rows = parseCSV(csv);
+
+  expect(rows.length).toBe(2);
+
+  const john = rows.find(r => r.first_name === 'John');
+  expect(john).toBeTruthy();
+  expect(john?.last_name).toBe('Smith');
+  // Salesforce preset: lowercaseEmail: false — email case preserved
+  expect(john?.email).toBe('JOHN@ACME.COM');
+  // Phone formatted: 5551234567 → (555) 123-4567
+  expect(john?.phone).toBe('(555) 123-4567');
+
+  const jane = rows.find(r => r.first_name === 'Jane');
+  expect(jane).toBeTruthy();
+  expect(jane?.last_name).toBe('Doe');
+  expect(jane?.email).toBe('JANE@ACME.COM');
+  expect(jane?.phone).toBe('(555) 987-6543');
+});
+
+// ── TC30: Duplicate column headers removed ────────────────────────
+test('TC30: duplicate column headers are deduplicated', async ({ page }) => {
+  // Fixture has two `email` columns; Quick Clean removes the second
+  await uploadCSV(page, '19-dup-headers.csv');
+  await runQuickClean(page);
+  await processAndWaitForDownload(page);
+  const csv = await downloadCSV(page);
+  const rows = parseCSV(csv);
+
+  expect(rows.length).toBe(2);
+
+  // Only one email column in output — parseCSV header set has no duplicate
+  const headers = Object.keys(rows[0]);
+  const emailCols = headers.filter(h => h.toLowerCase() === 'email');
+  expect(emailCols.length).toBe(1);
+
+  // Kept first email column values, not the dupe column
+  expect(rows.find(r => r.first_name === 'John')?.email).toBe('john@acme.com');
+  expect(rows.find(r => r.first_name === 'Jane')?.email).toBe('jane@acme.com');
+});
+
+// ── TC31: URL ?order_number param unlocks the tool ───────────────
+test.describe('URL unlock', () => {
+  test('TC31: ?order_number in URL unlocks tool and stores token', async ({ browser }) => {
+    // Fresh context — no init script, no pre-existing localStorage
+    const ctx = await browser.newContext();
+    const pg = await ctx.newPage();
+    try {
+      await pg.goto('http://localhost:4321/app.html?order_number=TEST-URL-123');
+      await pg.waitForLoadState('domcontentloaded');
+
+      // Tool should be unlocked by the URL param
+      await expect(pg.locator('#tool-view')).toBeVisible();
+      await expect(pg.locator('#locked-view')).not.toBeVisible();
+
+      // Token persisted to localStorage for future visits
+      const stored = await pg.evaluate(() =>
+        localStorage.getItem('cleanlist_v1_order_id')
+      );
+      expect(stored).toBe('TEST-URL-123');
+    } finally {
+      await ctx.close();
+    }
+  });
+});
