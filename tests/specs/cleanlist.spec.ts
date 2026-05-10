@@ -748,6 +748,28 @@ test('TC30: duplicate column headers are deduplicated', async ({ page }) => {
   expect(rows.find(r => r.first_name === 'Jane')?.email).toBe('jane@acme.com');
 });
 
+// ── TC32: Trim leading/trailing whitespace from field values ──────
+test('TC32: leading and trailing whitespace trimmed from fields', async ({ page }) => {
+  await uploadCSV(page, '20-trim-whitespace.csv');
+  await runQuickClean(page);
+  await processAndWaitForDownload(page);
+  const csv = await downloadCSV(page);
+  const rows = parseCSV(csv);
+
+  expect(rows.length).toBe(2);
+
+  const john = rows.find(r => r.first_name === 'John');
+  expect(john?.first_name).toBe('John');
+  expect(john?.last_name).toBe('Smith');
+  expect(john?.email).toBe('john@acme.com');
+  expect(john?.company).toBe('Acme Corp');
+
+  const jane = rows.find(r => r.first_name === 'Jane');
+  expect(jane?.last_name).toBe('Doe');
+  expect(jane?.email).toBe('jane@beta.com');
+  expect(jane?.company).toBe('Beta Inc');
+});
+
 // ── TC31: URL ?order_number param unlocks the tool ───────────────
 test.describe('URL unlock', () => {
   test('TC31: ?order_number in URL unlocks tool and stores token', async ({ browser }) => {
