@@ -44,14 +44,47 @@ export async function downloadCSV(page: Page): Promise<string> {
   return content.startsWith('﻿') ? content.slice(1) : content;
 }
 
-// Parse CSV text into array of row objects (simple, no quoted-comma support).
+// Split one CSV line into fields, handling RFC 4180 quoted fields with embedded commas.
+function parseCsvLine(line: string): string[] {
+  const fields: string[] = [];
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] === '"') {
+      i++;
+      let field = '';
+      while (i < line.length) {
+        if (line[i] === '"' && i + 1 < line.length && line[i + 1] === '"') {
+          field += '"'; i += 2;
+        } else if (line[i] === '"') {
+          i++; break;
+        } else {
+          field += line[i++];
+        }
+      }
+      fields.push(field);
+      if (i < line.length && line[i] === ',') i++;
+    } else {
+      const end = line.indexOf(',', i);
+      if (end === -1) { fields.push(line.slice(i).trim()); break; }
+      fields.push(line.slice(i, end).trim());
+      i = end + 1;
+    }
+  }
+  if (line.endsWith(',')) fields.push('');
+  return fields;
+}
+
+// Parse CSV text into array of row objects (handles quoted fields with embedded commas).
 export function parseCSV(csvText: string): Record<string, string>[] {
-  const lines = csvText.trim().split('\n').map(l => l.replace(/\r$/, ''));
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  const lines = csvText.trim().split('\n')
+    .map(l => l.replace(/\r$/, ''))
+    .filter(l => l.trim() !== '');
+  if (lines.length < 2) return [];
+  const headers = parseCsvLine(lines[0]);
   return lines.slice(1).map(line => {
-    const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    const values = parseCsvLine(line);
     const row: Record<string, string> = {};
-    headers.forEach((h, i) => { row[h] = values[i] !== undefined ? values[i] : ''; });
+    headers.forEach((h, i) => { row[h] = values[i] ?? ''; });
     return row;
   });
 }

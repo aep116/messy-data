@@ -587,3 +587,84 @@ test('TC24: XLSX download produces valid Excel file', async ({ page }) => {
   expect(bytes[2]).toBe(0x03);
   expect(bytes[3]).toBe(0x04);
 });
+
+// ── TC25: win.html shows correct removed count after real dedup ───
+test('TC25: win.html shows correct removed count after real dedup', async ({ page }) => {
+  await uploadCSV(page, '01-exact-duplicates.csv');
+  await runQuickClean(page);
+  await processAndWaitForDownload(page);
+
+  // Download triggers the 1-second redirect timer
+  await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#dl-csv-btn'),
+  ]);
+
+  await page.waitForURL(/win\.html/, { timeout: 5000 });
+  const params = new URLSearchParams(new URL(page.url()).search);
+
+  expect(params.get('changed')).toBe('1');
+  expect(params.get('removed')).toBe('2');
+  expect(params.get('rows')).toBe('4');
+
+  await page.waitForLoadState('domcontentloaded');
+
+  // Stat block shows numeric removed count
+  const statRemoved = await page.locator('#stat-removed').innerText();
+  expect(statRemoved).toBe('2');
+
+  // Card shows same count, not "already clean" label
+  const cardRemoved = await page.locator('#card-removed').innerText();
+  expect(cardRemoved).toBe('2');
+
+  const cardLabel = await page.locator('#card-removed-lbl').innerText();
+  expect(cardLabel).not.toMatch(/already clean/i);
+});
+
+// ── TC26: CSV with quoted commas preserved end-to-end ────────────
+test('TC26: fields with embedded commas survive cleaning intact', async ({ page }) => {
+  await uploadCSV(page, '16-quoted-commas.csv');
+  await runQuickClean(page);
+  await processAndWaitForDownload(page);
+  const csv = await downloadCSV(page);
+  const rows = parseCSV(csv);
+
+  expect(rows.length).toBe(2);
+
+  // Embedded commas in last_name and company must survive
+  const john = rows.find(r => r.first_name === 'John');
+  expect(john?.last_name).toBe('Smith, Jr.');
+  expect(john?.company).toBe('Acme, Inc.');
+
+  // Email also lowercased by Quick Clean defaults
+  expect(john?.email).toBe('john@acme.com');
+
+  const jane = rows.find(r => r.first_name === 'Jane');
+  expect(jane?.last_name).toBe('Doe');
+  expect(jane?.company).toBe('Beta Inc');
+});
+
+// ── TC27: Tool is locked without a payment token ──────────────────
+test.describe('Access control', () => {
+  test('TC27: tool is locked without a valid order token', async ({ browser }) => {
+    // Fresh context — no init script injected, no localStorage token
+    const ctx = await browser.newContext();
+    const pg = await ctx.newPage();
+    try {
+      await pg.goto('http://localhost:4321/app.html');
+      await pg.waitForLoadState('domcontentloaded');
+
+      // Locked view visible, tool view hidden
+      await expect(pg.locator('#locked-view')).toBeVisible();
+      await expect(pg.locator('#tool-view')).not.toBeVisible();
+
+      // Payment CTA is present
+      await expect(pg.locator('#locked-cta')).toBeVisible();
+
+      // Clean button is not reachable
+      await expect(pg.locator('#quick-clean-btn')).not.toBeVisible();
+    } finally {
+      await ctx.close();
+    }
+  });
+});
