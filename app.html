@@ -1203,7 +1203,8 @@ const COL_MAP = {
   phone:     ['phone', 'mobile', 'cell', 'telephone', 'tel', 'phone number', 'mobile number'],
   company:   ['company', 'organization', 'organisation', 'company name', 'account name', 'employer'],
   date:      ['date', 'created date', 'modified date', 'updated date', 'timestamp', 'joined',
-              'signup date', 'created at', 'updated at']
+              'signup date', 'created at', 'updated at', 'created_date', 'updated_date',
+              'modified_date', 'signup_date']
 };
 
 // ── CRM system column removal arrays ────────────────────────────
@@ -1786,7 +1787,7 @@ function processCSVText(text, filename) {
 
   const result = Papa.parse(text, {
     header: true,
-    skipEmptyLines: false,
+    skipEmptyLines: 'greedy',
     dynamicTyping: false,
     delimiter: ''
   });
@@ -2444,7 +2445,7 @@ function bindEvents() {
   // Paste toggle
   document.getElementById('paste-toggle-btn').addEventListener('click', () => {
     const pa = document.getElementById('paste-area');
-    const visible = pa.style.display !== 'none';
+    const visible = pa.style.display === 'block';
     pa.style.display = visible ? 'none' : 'block';
     if (!visible) pa.focus();
   });
@@ -2483,7 +2484,7 @@ function bindEvents() {
   const advSettings = document.getElementById('advanced-settings');
   const advChevron = document.getElementById('adv-chevron');
   function toggleAdv() {
-    const open = advSettings.style.display !== 'none';
+    const open = advSettings.style.display === 'block';
     advSettings.style.display = open ? 'none' : 'block';
     advChevron.classList.toggle('open', !open);
     advRow.setAttribute('aria-expanded', String(!open));
@@ -2557,7 +2558,7 @@ function bindEvents() {
   // Process full file
   document.getElementById('process-btn').addEventListener('click', () => {
     // If fuzzy confirm still shown, confirm first
-    if (document.getElementById('fuzzy-confirm-area').style.display !== 'none') {
+    if (document.getElementById('fuzzy-confirm-area').style.display === 'block') {
       document.getElementById('fuzzy-confirm-btn').click();
       return;
     }
