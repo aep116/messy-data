@@ -7,8 +7,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/fast-levenshtein@3.0.0/levenshtein.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/fast-levenshtein@3.0.0/levenshtein.js" integrity="sha384-9jn1YlOFQ4KnpXBlruypPeDwDgYJTBSU0Ed7xHlQDaJeMTVtQrJGdIon04CxbML/" crossorigin="anonymous" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" defer id="xlsx-script"></script>
 <style>
 :root {
   --bg: #0b1120;
@@ -798,6 +799,7 @@ select.field-input { appearance: auto; cursor: pointer; }
     <h1 class="locked-headline" id="locked-headline"></h1>
     <p class="locked-sub" id="locked-sub"></p>
     <a id="locked-cta" href="#" class="btn-cta"></a>
+    <p id="locked-post-cta" style="font-size:13px;color:var(--text2);margin-top:10px;"></p>
     <button class="already-paid-link" id="already-paid-btn"></button>
   </div>
 </div>
@@ -1064,15 +1066,29 @@ const LS_CHECKOUT_URL    = 'REPLACE_WITH_LEMON_SQUEEZY_CHECKOUT_URL';
 const FORMSPARK_ENDPOINT = 'REPLACE_WITH_FORMSPARK_ENDPOINT';
 const STORAGE_KEY        = 'cleanlist_v1_order_id';
 
+// ── Tuning constants ─────────────────────────────────────────────
+const FUZZY_ROW_CAP           = 10000;
+const FUZZY_STRING_TRUNCATE   = 200;
+const FUZZY_THRESHOLD_BAL     = 0.85;
+const PREVIEW_MAX_ROWS        = 50;
+const OVERLAY_ROW_THRESHOLD   = 5000;
+const PROGRESS_ROW_THRESHOLD  = 1000;
+const WARN_LARGE_ROWS         = 5000;
+const WARN_MANY_ROWS          = 50000;
+const MAX_FILE_MB             = 100;
+const WARN_FILE_MB            = 20;
+const TWO_DIGIT_YEAR_CUTOFF   = 50;
+
 // ── i18n ─────────────────────────────────────────────────────────
 const i18n = {
   en: {
     privacyBanner:      'Your data never leaves your browser — whether uploaded or pasted. All processing happens locally.',
     cookieNotice:       'This site uses browser storage for payment access only. No tracking.',
     cookieDismiss:      'Got it',
-    lockedHeadline:     'CleanList',
-    lockedSubhead:      'Clean your CSV in seconds. Nothing uploaded. No account.',
-    lockedCta:          'Get CleanList — $39',
+    lockedHeadline:     'Clean your CRM export in seconds',
+    lockedSubhead:      'Built for HubSpot, Salesforce, Apollo, and Mailchimp exports. Nothing uploaded. No account. $39 one-time.',
+    lockedCta:          'Get CleanList — $39 one-time',
+    lockedPostCta:      'Pay once → instant access → no download, no account',
     alreadyPaid:        'I already paid',
     paymentConfirmed:   'Payment confirmed — you\'re in. Start cleaning below.',
     dropZone:           'Drop your CSV here',
@@ -1113,6 +1129,7 @@ const i18n = {
     cleanAnother:       'Clean another file',
     errNotCsv:          'This file couldn\'t be read as a CSV. Please select a .csv file.',
     errEmpty:           'This file appears to be empty.',
+    errFileTooLarge:    'This file is too large to process (max 100MB). Try splitting it into smaller files first.',
     warnLargeFile:      'Large file — processing may take a moment. Your browser is doing all the work.',
     warnManyRows:       'This file has {n} rows — we\'ll show a progress bar.',
     warnMediumRows:     'This file has {n} rows — processing may take a moment.',
@@ -1383,7 +1400,7 @@ function standardizeDate(val) {
     m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
     if (m) {
       const a = parseInt(m[1],10), b = parseInt(m[2],10);
-      const yr = parseInt(m[3],10) < 50 ? 2000 + parseInt(m[3],10) : 1900 + parseInt(m[3],10);
+      const yr = parseInt(m[3],10) < TWO_DIGIT_YEAR_CUTOFF ? 2000 + parseInt(m[3],10) : 1900 + parseInt(m[3],10);
       let mon, day;
       if (a > 12) { day = a; mon = b; }
       else if (b > 12) { mon = a; day = b; }
@@ -1418,11 +1435,11 @@ function buildMatchString(row, headers, colIdx) {
   } else {
     return null;
   }
-  return s.slice(0, 200);
+  return s.slice(0, FUZZY_STRING_TRUNCATE);
 }
 
 function runFuzzyDedup(rows, headers, colIdx, threshold) {
-  if (rows.length > 10000) return { pairs: [], capped: true };
+  if (rows.length > FUZZY_ROW_CAP) return { pairs: [], capped: true };
   const strings = rows.map(r => buildMatchString(r, headers, colIdx));
   const pairs = [];
   for (let i = 0; i < strings.length; i++) {
@@ -1630,7 +1647,8 @@ let state = {
   startTime: null,
   fuzzyPairs: [],
   showAllCols: false,
-  xlsxLoaded: false
+  redirectTimer: null,
+  isProcessing: false
 };
 
 // ── UI helpers ───────────────────────────────────────────────────
@@ -1731,7 +1749,13 @@ function handleFile(file) {
     return;
   }
 
-  if (file.size > 20 * 1024 * 1024) {
+  if (file.size > MAX_FILE_MB * 1024 * 1024) {
+    showMsg('msg-file-err', t.errFileTooLarge);
+    resetFileInput();
+    return;
+  }
+
+  if (file.size > WARN_FILE_MB * 1024 * 1024) {
     showMsg('msg-file-warn', t.warnLargeFile);
   }
 
@@ -1791,9 +1815,9 @@ function processCSVText(text, filename) {
     showMsg('msg-file-info', t.noticeOneCol);
   }
 
-  if (rows.length > 50000) {
+  if (rows.length > WARN_MANY_ROWS) {
     showMsg('msg-file-warn', fmt(t.warnManyRows, { n: rows.length.toLocaleString() }));
-  } else if (rows.length > 5000) {
+  } else if (rows.length > WARN_LARGE_ROWS) {
     showMsg('msg-file-warn', fmt(t.warnMediumRows, { n: rows.length.toLocaleString() }));
   }
 
@@ -1804,7 +1828,7 @@ function processCSVText(text, filename) {
   const fuzzyToggle = document.getElementById('t-fuzzy');
   const fuzzyCapNotice = document.getElementById('fuzzy-cap-notice');
   if (fuzzyToggle && fuzzyCapNotice) {
-    if (fuzzyToggle.checked && rows.length > 10000) {
+    if (fuzzyToggle.checked && rows.length > FUZZY_ROW_CAP) {
       fuzzyCapNotice.textContent = fmt(t.fuzzyCapWarning, { n: rows.length.toLocaleString() });
       fuzzyCapNotice.style.display = 'block';
     } else {
@@ -1832,6 +1856,7 @@ function resetFileInput() {
 
 // ── Run cleaning ─────────────────────────────────────────────────
 function runCleaning(settings) {
+  if (state.isProcessing) return;
   if (!state.parsedRows.length) {
     // Try paste area
     const pasteVal = document.getElementById('paste-area').value.trim();
@@ -1840,13 +1865,14 @@ function runCleaning(settings) {
     return;
   }
 
+  state.isProcessing = true;
   state.settings = settings;
   state.startTime = Date.now();
 
   const rowCount = state.parsedRows.length;
 
   // Show overlay for large files
-  if (rowCount > 5000) {
+  if (rowCount > OVERLAY_ROW_THRESHOLD) {
     showOverlay(true);
     document.getElementById('processing-text').textContent = t.processingMsg;
   }
@@ -1864,13 +1890,13 @@ function runCleaning(settings) {
       // Handle fuzzy dedup
       if (settings.fuzzy) {
         const colIdx = buildColIndex(state.cleanedHeaders);
-        if (rowCount > 10000) {
+        if (rowCount > FUZZY_ROW_CAP) {
           showMsg('msg-file-warn', 'Fuzzy dedup skipped — file exceeds 10,000 row limit.');
           renderPreview(false);
           return;
         }
         const { pairs, capped } = runFuzzyDedup(
-          state.cleanedRows, state.cleanedHeaders, colIdx, 0.85
+          state.cleanedRows, state.cleanedHeaders, colIdx, FUZZY_THRESHOLD_BAL
         );
         state.fuzzyPairs = pairs;
         if (pairs.length > 0) {
@@ -1886,7 +1912,7 @@ function runCleaning(settings) {
       showMsg('msg-file-err', 'An error occurred while processing your file. Please try again.');
       console.error(err);
     }
-  }, rowCount > 5000 ? 50 : 0);
+  }, rowCount > OVERLAY_ROW_THRESHOLD ? 50 : 0);
 }
 
 // ── Render preview ───────────────────────────────────────────────
@@ -1929,9 +1955,9 @@ function renderPreview(hasFuzzy) {
     statsEl.appendChild(none);
   }
 
-  // Detect changed columns (between original first 50 rows and cleaned first 50)
-  const preview50orig = parsedRows.slice(0, 50);
-  const preview50clean = cleanedRows.slice(0, 50);
+  // Detect changed columns (between original first PREVIEW_MAX_ROWS rows and cleaned first PREVIEW_MAX_ROWS)
+  const preview50orig = parsedRows.slice(0, PREVIEW_MAX_ROWS);
+  const preview50clean = cleanedRows.slice(0, PREVIEW_MAX_ROWS);
 
   const changedCols = new Set();
   cleanedHeaders.forEach(h => {
@@ -2036,7 +2062,7 @@ function renderFuzzyConfirm(pairs) {
 // ── Process full file (transition to download) ───────────────────
 function processFullFile() {
   const rowCount = state.cleanedRows.length;
-  if (rowCount > 1000) {
+  if (rowCount > PROGRESS_ROW_THRESHOLD) {
     document.getElementById('progress-wrap').style.display = 'block';
     let p = 0;
     const iv = setInterval(() => {
@@ -2064,6 +2090,7 @@ function showDownload() {
     !state.cleanStats.colsRemoved && !state.cleanStats.dates && !state.cleanStats.phones &&
     !state.cleanStats.emailsCased && !state.cleanStats.namesCased;
   state.isAlreadyClean = isAlreadyClean;
+  state.isProcessing = false;
 
   let summaryText = fmt(t.summaryLine, {
     orig: orig.toLocaleString(),
@@ -2104,7 +2131,7 @@ function isIOSSafari() {
 function downloadCSV() {
   const { cleanedRows, cleanedHeaders, originalFilename } = state;
   const csv = Papa.unparse({ fields: cleanedHeaders, data: cleanedRows });
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
 
   // Filename sanitization
   const baseName = originalFilename.replace(/\.[^.]+$/, '');
@@ -2149,7 +2176,7 @@ function downloadCSV() {
 
   // Redirect to win.html after 1 second
   const { rows, removed, seconds } = state.finalStats;
-  setTimeout(() => {
+  state.redirectTimer = setTimeout(() => {
     window.location.href = 'win.html?rows=' + rows +
       '&removed=' + removed +
       '&seconds=' + seconds +
@@ -2158,7 +2185,7 @@ function downloadCSV() {
   }, 1000);
 }
 
-// ── Excel download (lazy SheetJS) ────────────────────────────────
+// ── Excel download ────────────────────────────────────────────────
 async function downloadXLSX() {
   const btn = document.getElementById('dl-xlsx-btn');
   const errEl = document.getElementById('xlsx-error');
@@ -2166,23 +2193,12 @@ async function downloadXLSX() {
   btn.textContent = 'Loading...';
   errEl.style.display = 'none';
 
-  if (!state.xlsxLoaded) {
-    try {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-      state.xlsxLoaded = true;
-    } catch {
-      errEl.textContent = t.xlsxLoadError;
-      errEl.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = t.downloadXlsx;
-      return;
-    }
+  if (typeof XLSX === 'undefined') {
+    errEl.textContent = t.xlsxLoadError;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = t.downloadXlsx;
+    return;
   }
 
   const { cleanedRows, cleanedHeaders, originalFilename } = state;
@@ -2202,7 +2218,7 @@ async function downloadXLSX() {
 
   // Redirect to win.html after 1 second
   const { rows, removed, seconds } = state.finalStats;
-  setTimeout(() => {
+  state.redirectTimer = setTimeout(() => {
     window.location.href = 'win.html?rows=' + rows +
       '&removed=' + removed +
       '&seconds=' + seconds +
@@ -2215,6 +2231,10 @@ async function downloadXLSX() {
 function cleanAnother() {
   const keepSettings = document.getElementById('keep-settings-cb')?.checked;
 
+  // Cancel any pending redirect
+  clearTimeout(state.redirectTimer);
+  state.redirectTimer = null;
+
   // Reset all state
   state.parsedRows = [];
   state.parsedHeaders = [];
@@ -2223,6 +2243,9 @@ function cleanAnother() {
   state.originalFilename = '';
   state.fuzzyPairs = [];
   state.showAllCols = false;
+  state.isAlreadyClean = false;
+  state.crmName = 'CSV';
+  state.isProcessing = false;
 
   // Reset UI
   resetFileInput();
@@ -2315,6 +2338,7 @@ function populateI18n() {
   document.getElementById('locked-sub').textContent = t.lockedSubhead;
   document.getElementById('locked-cta').textContent = t.lockedCta;
   document.getElementById('locked-cta').href = LS_CHECKOUT_URL;
+  document.getElementById('locked-post-cta').textContent = t.lockedPostCta;
   document.getElementById('already-paid-btn').textContent = t.alreadyPaid;
   document.getElementById('drop-zone-text').textContent = t.dropZone;
   document.getElementById('select-file-btn').textContent = t.selectFile;
@@ -2475,7 +2499,7 @@ function bindEvents() {
   // Fuzzy toggle — show upfront cap warning for large files
   document.getElementById('t-fuzzy').addEventListener('change', e => {
     const notice = document.getElementById('fuzzy-cap-notice');
-    if (e.target.checked && state.parsedRows.length > 10000) {
+    if (e.target.checked && state.parsedRows.length > FUZZY_ROW_CAP) {
       notice.textContent = fmt(t.fuzzyCapWarning, { n: state.parsedRows.length.toLocaleString() });
       notice.style.display = 'block';
     } else {

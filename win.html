@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
 <style>
 :root {
   --bg: #0b1120;
@@ -216,6 +216,26 @@ body {
   padding: 4px;
 }
 
+.win-buy-cta {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.win-buy-cta p {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.win-buy-cta a {
+  display: inline-block;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.win-buy-cta a:hover { text-decoration: underline; }
+
 .cookie-notice {
   position: fixed;
   bottom: 0;
@@ -303,6 +323,10 @@ body {
 
   <a href="app.html" class="btn-secondary" id="clean-another-btn"></a>
   <button class="skip-link" id="skip-btn" onclick="window.location.href='app.html'"></button>
+  <div class="win-buy-cta" id="win-buy-cta" style="display:none">
+    <p id="win-buy-prompt"></p>
+    <a id="win-buy-btn" href="#"></a>
+  </div>
 </div>
 
 <div class="cookie-notice" id="cookie-notice" style="display:none">
@@ -311,6 +335,8 @@ body {
 </div>
 
 <script>
+const LS_CHECKOUT_URL = 'REPLACE_WITH_LEMON_SQUEEZY_CHECKOUT_URL';
+
 const i18n = {
   en: {
     winHeadline: 'Your list is clean.',
@@ -329,7 +355,9 @@ const i18n = {
     cookieDismiss: 'Got it',
     cardDownloadError: 'Card download failed. Check your connection and try again.',
     cardAlreadyClean: 'Already clean — no duplicates found.',
-    winXTextClean: 'Just ran CleanList on a {rows}-row {crm} export.\nAlready clean — zero duplicates found.\nNothing uploaded. No account. $39 one-time.\n\ncleanlistapp.com'
+    winXTextClean: 'Verified my {rows}-row {crm} export with CleanList — zero duplicates, clean data.\nNothing leaves your browser. No account. $39 one-time.\n\ncleanlistapp.com',
+    winBuyPrompt: 'Not using CleanList yet?',
+    winBuyCta: 'Get CleanList — $39 one-time →'
   }
 };
 i18n.de = { ...i18n.en };
@@ -402,6 +430,16 @@ document.getElementById('download-card-btn').textContent = t.winDownloadCard;
 document.getElementById('post-x-btn').textContent = t.winPostX;
 document.getElementById('clean-another-btn').textContent = t.winCleanAnother;
 document.getElementById('skip-btn').textContent = t.winSkip;
+
+// Purchase CTA — show only to users who landed here without a stored access token
+const STORAGE_KEY = 'cleanlist_v1_order_id';
+if (!localStorage.getItem(STORAGE_KEY)) {
+  document.getElementById('win-buy-prompt').textContent = t.winBuyPrompt;
+  const winBuyBtn = document.getElementById('win-buy-btn');
+  winBuyBtn.textContent = t.winBuyCta;
+  winBuyBtn.href = LS_CHECKOUT_URL;
+  document.getElementById('win-buy-cta').style.display = 'block';
+}
 
 // X post text — use clean-variant template when removed=0
 const xText = isAlreadyClean
