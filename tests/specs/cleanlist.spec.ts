@@ -474,4 +474,116 @@ test('TC21: CDN script tags have SRI integrity attributes', async ({ page }) => 
   const levSrc = await page.locator('script[src*="levenshtein"]').getAttribute('integrity');
   expect(levSrc).toBeTruthy();
   expect(levSrc).toMatch(/^sha384-/);
+  // v2.0.6 — proper UMD browser build (v3.0.0 used require() and never exposed a global)
+  expect(levSrc).toBe('sha384-kbcaliuOlQsZ5aNUXD6FYL9vL6AlLdfJoY34DmzX/fHf7O/HaT1cVAYJTFxuCkNx');
+});
+
+// ── TC22: Name title casing including Mc and O' edge cases ────────
+test("TC22: title cases names including Mc and O' prefixes", async ({ page }) => {
+  await uploadCSV(page, '04-name-casing.csv');
+  await runQuickClean(page);
+
+  const stats = await getStatText(page);
+  expect(stats).toMatch(/names normalized/i);
+
+  await processAndWaitForDownload(page);
+  const csv = await downloadCSV(page);
+  const rows = parseCSV(csv);
+
+  const findRow = (first: string) => rows.find(r => r.first_name === first);
+
+  // All-caps → Title Case
+  expect(findRow('John')?.last_name).toBe('Smith');
+  expect(findRow('Jane')?.last_name).toBe('Doe');
+
+  // All-lowercase → Title Case
+  expect(findRow('Alice')?.last_name).toBe('Brown');
+
+  // Already correct → unchanged
+  expect(findRow('Bob')?.last_name).toBe('Jones');
+
+  // Mc prefix edge case
+  expect(findRow('Sean')?.last_name).toBe('McDonald');
+
+  // O' prefix edge case
+  expect(findRow('Kate')?.last_name).toBe("O'Brien");
+
+  // Email lowercased alongside name casing (Quick Clean default includes lowercase email)
+  expect(findRow('John')?.email).toBe('john@acme.com');
+});
+
+// ── TC23: Fuzzy deduplication ─────────────────────────────────────
+test('TC23: fuzzy dedup identifies and removes near-duplicate rows', async ({ page }) => {
+  await uploadCSV(page, '15-fuzzy-dedup.csv');
+
+  // Open advanced settings panel so user can see fuzzy option
+  await page.click('#adv-toggle-row');
+  await page.waitForSelector('#advanced-settings', { state: 'visible' });
+  // Trigger cleaning with fuzzy enabled via evaluate — toggle-switch span intercepts pointer
+  // events on the hidden input, and clean-settings-btn does not receive the handler call
+  // reliably in headless; calling runCleaning directly is the equivalent UI action
+  await page.evaluate(() => {
+    const cb = document.getElementById('t-fuzzy') as HTMLInputElement;
+    cb.checked = true;
+    cb.dispatchEvent(new Event('change', { bubbles: true }));
+    (window as any).runCleaning((window as any).getSettings());
+  });
+
+  // Fuzzy confirm UI appears with the matched pair
+  await page.waitForSelector('#fuzzy-confirm-area', { state: 'visible', timeout: 10000 });
+  const scoreText = await page.locator('#fuzzy-pairs-list').innerText();
+  expect(scoreText).toMatch(/\d+% match/);
+
+  // Confirm removal — checkboxes are checked by default → removes second of each pair
+  await page.click('#fuzzy-confirm-btn');
+  await expect(page.locator('#fuzzy-confirm-area')).not.toBeVisible();
+
+  const stats = await getStatText(page);
+  expect(stats).toMatch(/duplicates removed/i);
+
+  await processAndWaitForDownload(page);
+  const csv = await downloadCSV(page);
+  const rows = parseCSV(csv);
+
+  expect(rows.length).toBe(2);
+  expect(rows.find(r => r.first_name === 'John' && r.last_name === 'Smith')).toBeTruthy();
+  expect(rows.find(r => r.first_name === 'Jon'  && r.last_name === 'Smith')).toBeUndefined();
+  expect(rows.find(r => r.first_name === 'Jane' && r.last_name === 'Doe')).toBeTruthy();
+});
+
+// ── TC24: XLSX download ───────────────────────────────────────────
+test('TC24: XLSX download produces valid Excel file', async ({ page }) => {
+  await uploadCSV(page, '01-exact-duplicates.csv');
+  await runQuickClean(page);
+  await processAndWaitForDownload(page);
+
+  // XLSX button hidden until toggle is checked
+  await expect(page.locator('#dl-xlsx-btn')).not.toBeVisible();
+
+  // Toggle switch <span> intercepts pointer events — set via evaluate
+  await page.evaluate(() => {
+    const cb = document.getElementById('t-excel') as HTMLInputElement;
+    cb.checked = true;
+    cb.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await expect(page.locator('#dl-xlsx-btn')).toBeVisible();
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#dl-xlsx-btn'),
+  ]);
+
+  const filename = download.suggestedFilename();
+  expect(filename).toContain('-cleaned');
+  expect(filename).toMatch(/\.xlsx$/i);
+
+  const filePath = await download.path();
+  const bytes = fs.readFileSync(filePath!);
+  expect(bytes.length).toBeGreaterThan(0);
+
+  // Valid XLSX is a ZIP archive — starts with PK\x03\x04
+  expect(bytes[0]).toBe(0x50); // 'P'
+  expect(bytes[1]).toBe(0x4B); // 'K'
+  expect(bytes[2]).toBe(0x03);
+  expect(bytes[3]).toBe(0x04);
 });

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs" crossorigin="anonymous" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/fast-levenshtein@3.0.0/levenshtein.js" integrity="sha384-9jn1YlOFQ4KnpXBlruypPeDwDgYJTBSU0Ed7xHlQDaJeMTVtQrJGdIon04CxbML/" crossorigin="anonymous" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/fast-levenshtein@2.0.6/levenshtein.js" integrity="sha384-kbcaliuOlQsZ5aNUXD6FYL9vL6AlLdfJoY34DmzX/fHf7O/HaT1cVAYJTFxuCkNx" crossorigin="anonymous" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous" defer id="xlsx-script"></script>
 <style>
 :root {
@@ -1449,7 +1449,7 @@ function runFuzzyDedup(rows, headers, colIdx, threshold) {
       if (!strings[j]) continue;
       const maxLen = Math.max(strings[i].length, strings[j].length);
       if (maxLen === 0) continue;
-      const dist = levenshtein.get(strings[i], strings[j]);
+      const dist = Levenshtein.get(strings[i], strings[j]);
       const sim = 1 - dist / maxLen;
       if (sim >= threshold) {
         pairs.push({ i, j, sim: Math.round(sim * 100), a: strings[i], b: strings[j] });

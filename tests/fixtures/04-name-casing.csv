@@ -1,5 +1,7 @@
 first_name,last_name,email
-JOHN,SMITH,john@acme.com
+JOHN,SMITH,JOHN@ACME.COM
 JANE,DOE,jane@acme.com
 Bob,Jones,bob@acme.com
 alice,brown,alice@acme.com
+SEAN,MCDONALD,sean@example.com
+KATE,O'BRIEN,kate@example.com
