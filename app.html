@@ -1082,7 +1082,12 @@ const TWO_DIGIT_YEAR_CUTOFF   = 50;
 
 // ── localStorage safe wrappers (SecurityError in Safari private mode) ──
 function lsGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
-function lsSet(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch(e) {
+    if (e instanceof DOMException && e.name === 'SecurityError') return;
+    throw e; // QuotaExceededError and others surface instead of silently failing
+  }
+}
 
 // ── i18n ─────────────────────────────────────────────────────────
 const i18n = {
@@ -1657,7 +1662,9 @@ let state = {
   fuzzyPairs: [],
   showAllCols: false,
   redirectTimer: null,
-  isProcessing: false
+  isProcessing: false,
+  isAlreadyClean: false,
+  finalStats: null
 };
 
 // ── UI helpers ───────────────────────────────────────────────────
@@ -2302,6 +2309,7 @@ function checkAccess() {
   const params = new URLSearchParams(window.location.search);
   const rawOrder = params.get('order_number');
   const orderNumber = rawOrder && /^[a-zA-Z0-9_-]{4,64}$/.test(rawOrder) ? rawOrder : null;
+  if (rawOrder && !orderNumber) console.warn('order_number param failed format validation:', rawOrder);
 
   if (orderNumber) {
     if (!alreadyHadToken) {
