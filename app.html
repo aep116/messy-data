@@ -912,7 +912,7 @@ select.field-input { appearance: auto; cursor: pointer; }
             <label class="toggle-row" id="row-fuzzy">
               <input type="checkbox" id="t-fuzzy">
               <span class="toggle-switch"></span>
-              <span class="toggle-lbl">Fuzzy deduplicate (name+company) — 10k row max</span>
+              <span class="toggle-lbl">Fuzzy deduplicate (name+company) — 2k row max</span>
             </label>
             <div id="fuzzy-cap-notice" style="display:none;font-size:12px;color:var(--warn);padding:6px 0 0 4px;line-height:1.4"></div>
           </div>
@@ -1068,7 +1068,7 @@ const FORMSPARK_ENDPOINT = 'REPLACE_WITH_FORMSPARK_ENDPOINT';
 const STORAGE_KEY        = 'cleanlist_v1_order_id';
 
 // ── Tuning constants ─────────────────────────────────────────────
-const FUZZY_ROW_CAP           = 10000;
+const FUZZY_ROW_CAP           = 2000;   // O(n²) — 2k keeps main-thread block under ~3s
 const FUZZY_STRING_TRUNCATE   = 200;
 const FUZZY_THRESHOLD_BAL     = 0.85;
 const PREVIEW_MAX_ROWS        = 50;
@@ -1079,6 +1079,10 @@ const WARN_MANY_ROWS          = 50000;
 const MAX_FILE_MB             = 100;
 const WARN_FILE_MB            = 20;
 const TWO_DIGIT_YEAR_CUTOFF   = 50;
+
+// ── localStorage safe wrappers (SecurityError in Safari private mode) ──
+function lsGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+function lsSet(key, val) { try { localStorage.setItem(key, val); } catch(e) {} }
 
 // ── i18n ─────────────────────────────────────────────────────────
 const i18n = {
@@ -1153,7 +1157,9 @@ const i18n = {
     recoveryMsg:        'We don\'t store accounts, so we can\'t look you up automatically. Check your inbox for a receipt from Lemon Squeezy — it contains your access link. If you can\'t find it, email support@cleanlistapp.com with your order confirmation.',
     iosSaveInstruction: 'Your file is ready. Tap and hold the link below and choose Save to Files.',
     iosContinueBtn:     'I\'ve saved it — Continue',
-    fuzzyCapWarning:    'This file has {n} rows. Fuzzy matching applies to the first 10,000 rows only.',
+    fuzzyCapWarning:    'This file has {n} rows. Fuzzy matching applies to the first 2,000 rows only.',
+    fuzzySkippedCap:    'Fuzzy dedup skipped — file exceeds 2,000 row limit.',
+    errNoFileSelected:  'Please select or paste a CSV file first.',
     xlsxLoadError:      'Excel download failed. Try CSV instead, or check your connection and try again.',
     purchasedBadge:     'Purchased',
     warnAllRowsRemoved: 'All rows were removed by the current settings. Your download will contain headers only. Go back and adjust settings if this is unexpected.',
@@ -1169,6 +1175,7 @@ const i18n = {
     keepSettings:       'Keep my settings for next file'
   }
 };
+// TODO: translate de and pt — currently English copies
 i18n.de = { ...i18n.en };
 i18n.pt = { ...i18n.en };
 
@@ -1422,7 +1429,7 @@ function isRowEmpty(row, headers) {
 
 /* Fuzzy dedup — Levenshtein on name+company string
    matchString = (firstName + ' ' + lastName + ' ' + company) or (fullName + ' ' + company)
-   Truncated to 200 chars. Hard cap: 10,000 rows. */
+   Truncated to 200 chars. Hard cap: 2,000 rows. */
 function buildMatchString(row, headers, colIdx) {
   let s;
   if (colIdx.firstName !== undefined || colIdx.lastName !== undefined) {
@@ -1863,7 +1870,7 @@ function runCleaning(settings) {
     // Try paste area
     const pasteVal = document.getElementById('paste-area').value.trim();
     if (pasteVal) { handlePasteLoad(); return; }
-    showMsg('msg-file-err', 'Please select or paste a CSV file first.');
+    showMsg('msg-file-err', t.errNoFileSelected);
     return;
   }
 
@@ -1893,7 +1900,7 @@ function runCleaning(settings) {
       if (settings.fuzzy) {
         const colIdx = buildColIndex(state.cleanedHeaders);
         if (rowCount > FUZZY_ROW_CAP) {
-          showMsg('msg-file-warn', 'Fuzzy dedup skipped — file exceeds 10,000 row limit.');
+          showMsg('msg-file-warn', t.fuzzySkippedCap);
           renderPreview(false);
           return;
         }
@@ -1922,7 +1929,6 @@ function renderPreview(hasFuzzy) {
   showSection('preview');
 
   const { cleanedRows, cleanedHeaders, parsedRows, parsedHeaders, cleanStats } = state;
-  const t_ = t;
 
   // Stats block
   const statsEl = document.getElementById('stats-block');
@@ -1953,7 +1959,7 @@ function renderPreview(hasFuzzy) {
   if (statsEl.children.length === 0) {
     const none = document.createElement('div');
     none.style.cssText = 'font-size:13px;color:var(--text3);padding:10px 4px';
-    none.textContent = t_.statsNoneDetected;
+    none.textContent = t.statsNoneDetected;
     statsEl.appendChild(none);
   }
 
@@ -1980,7 +1986,7 @@ function renderPreview(hasFuzzy) {
   // Already-clean message
   const alreadyCleanEl = document.getElementById('already-clean-msg');
   if (!hasChanges && !hasFuzzy) {
-    alreadyCleanEl.textContent = t_.alreadyClean;
+    alreadyCleanEl.textContent = t.alreadyClean;
     alreadyCleanEl.style.display = 'block';
   } else {
     alreadyCleanEl.style.display = 'none';
@@ -2026,12 +2032,12 @@ function renderPreview(hasFuzzy) {
 
   // Show all toggle
   const showAllBtn = document.getElementById('show-all-btn');
-  showAllBtn.textContent = state.showAllCols ? t_.showChangedOnly : t_.showAllCols;
-  document.getElementById('preview-note-text').textContent = t_.previewNote;
+  showAllBtn.textContent = state.showAllCols ? t.showChangedOnly : t.showAllCols;
+  document.getElementById('preview-note-text').textContent = t.previewNote;
 
-  document.getElementById('process-btn').textContent = t_.processBtn;
-  document.getElementById('start-over-btn').textContent = t_.startOver;
-  document.getElementById('preview-headline').textContent = t_.previewHeadline;
+  document.getElementById('process-btn').textContent = t.processBtn;
+  document.getElementById('start-over-btn').textContent = t.startOver;
+  document.getElementById('preview-headline').textContent = t.previewHeadline;
 }
 
 // ── Render fuzzy confirm ─────────────────────────────────────────
@@ -2246,6 +2252,7 @@ function cleanAnother() {
   state.fuzzyPairs = [];
   state.showAllCols = false;
   state.isAlreadyClean = false;
+  state.finalStats = null;
   state.crmName = 'CSV';
   state.isProcessing = false;
 
@@ -2289,28 +2296,29 @@ function cleanAnother() {
 // ── Access control ───────────────────────────────────────────────
 function checkAccess() {
   // Check if token already in localStorage BEFORE processing URL params
-  const alreadyHadToken = !!localStorage.getItem(STORAGE_KEY);
+  const alreadyHadToken = !!lsGet(STORAGE_KEY);
 
-  // Check URL param
+  // Check URL param — validate format before storing
   const params = new URLSearchParams(window.location.search);
-  const orderNumber = params.get('order_number');
+  const rawOrder = params.get('order_number');
+  const orderNumber = rawOrder && /^[a-zA-Z0-9_-]{4,64}$/.test(rawOrder) ? rawOrder : null;
 
   if (orderNumber) {
     if (!alreadyHadToken) {
       // First purchase — store token and show confirmation banner
-      localStorage.setItem(STORAGE_KEY, orderNumber);
+      lsSet(STORAGE_KEY, orderNumber);
       const banner = document.getElementById('payment-banner');
       banner.textContent = t.paymentConfirmed;
       banner.style.display = 'block';
       setTimeout(() => { banner.style.display = 'none'; }, 3000);
     } else {
-      localStorage.setItem(STORAGE_KEY, orderNumber);
+      lsSet(STORAGE_KEY, orderNumber);
     }
     // Clean URL
     history.replaceState(null, '', window.location.pathname);
   }
 
-  const token = localStorage.getItem(STORAGE_KEY);
+  const token = lsGet(STORAGE_KEY);
   if (token) {
     unlockTool();
   } else {
@@ -2339,7 +2347,11 @@ function populateI18n() {
   document.getElementById('locked-headline').textContent = t.lockedHeadline;
   document.getElementById('locked-sub').textContent = t.lockedSubhead;
   document.getElementById('locked-cta').textContent = t.lockedCta;
-  document.getElementById('locked-cta').href = LS_CHECKOUT_URL;
+  if (LS_CHECKOUT_URL.startsWith('https://')) {
+    document.getElementById('locked-cta').href = LS_CHECKOUT_URL;
+  } else {
+    console.error('LS_CHECKOUT_URL is not configured');
+  }
   document.getElementById('locked-post-cta').textContent = t.lockedPostCta;
   document.getElementById('already-paid-btn').textContent = t.alreadyPaid;
   document.getElementById('drop-zone-text').textContent = t.dropZone;
@@ -2519,7 +2531,7 @@ function bindEvents() {
         processCSVText(pasteVal, 'pasted-data.csv');
         if (state.parsedRows.length === 0) return;
       } else {
-        showMsg('msg-file-err', 'Please select or paste a CSV file first.');
+        showMsg('msg-file-err', t.errNoFileSelected);
         return;
       }
     }
@@ -2695,11 +2707,11 @@ function bindEvents() {
 
   // Cookie notice
   const COOKIE_KEY = 'cleanlist_cookie_dismissed';
-  if (!localStorage.getItem(COOKIE_KEY)) {
+  if (!lsGet(COOKIE_KEY)) {
     document.getElementById('cookie-notice').style.display = 'flex';
   }
   document.getElementById('cookie-dismiss').addEventListener('click', () => {
-    localStorage.setItem(COOKIE_KEY, '1');
+    lsSet(COOKIE_KEY, '1');
     document.getElementById('cookie-notice').style.display = 'none';
   });
 }
