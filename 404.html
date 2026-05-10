@@ -135,12 +135,20 @@ document.getElementById('nf-link').textContent = t.notFoundLink;
 document.getElementById('cookie-text').textContent = t.cookieNotice;
 document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
 
+function lsGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch(e) {
+    if (e instanceof DOMException && e.name === 'SecurityError') return;
+    throw e;
+  }
+}
+
 const COOKIE_KEY = 'cleanlist_cookie_dismissed';
-if (!localStorage.getItem(COOKIE_KEY)) {
+if (!lsGet(COOKIE_KEY)) {
   document.getElementById('cookie-notice').style.display = 'flex';
 }
 document.getElementById('cookie-dismiss').addEventListener('click', () => {
-  localStorage.setItem(COOKIE_KEY, '1');
+  lsSet(COOKIE_KEY, '1');
   document.getElementById('cookie-notice').style.display = 'none';
 });
 </script>

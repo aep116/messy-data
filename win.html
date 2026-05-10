@@ -322,7 +322,7 @@ body {
   </div>
 
   <a href="app.html" class="btn-secondary" id="clean-another-btn"></a>
-  <button class="skip-link" id="skip-btn" onclick="window.location.href='app.html'"></button>
+  <button class="skip-link" id="skip-btn"></button>
   <div class="win-buy-cta" id="win-buy-cta" style="display:none">
     <p id="win-buy-prompt"></p>
     <a id="win-buy-btn" href="#"></a>
@@ -336,6 +336,14 @@ body {
 
 <script>
 const LS_CHECKOUT_URL = 'REPLACE_WITH_LEMON_SQUEEZY_CHECKOUT_URL';
+
+function lsGet(key) { try { return localStorage.getItem(key); } catch(e) { return null; } }
+function lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch(e) {
+    if (e instanceof DOMException && e.name === 'SecurityError') return;
+    throw e;
+  }
+}
 
 const i18n = {
   en: {
@@ -360,8 +368,8 @@ const i18n = {
     winBuyCta: 'Get CleanList — $39 one-time →'
   }
 };
-i18n.de = { ...i18n.en };
-i18n.pt = { ...i18n.en };
+i18n.de = { ...i18n.en }; // TODO: translate de — currently English copies
+i18n.pt = { ...i18n.en }; // TODO: translate pt — currently English copies
 
 function detectLang() {
   const l = navigator.language || 'en';
@@ -430,14 +438,19 @@ document.getElementById('download-card-btn').textContent = t.winDownloadCard;
 document.getElementById('post-x-btn').textContent = t.winPostX;
 document.getElementById('clean-another-btn').textContent = t.winCleanAnother;
 document.getElementById('skip-btn').textContent = t.winSkip;
+document.getElementById('skip-btn').addEventListener('click', () => { window.location.href = 'app.html'; });
 
 // Purchase CTA — show only to users who landed here without a stored access token
 const STORAGE_KEY = 'cleanlist_v1_order_id';
-if (!localStorage.getItem(STORAGE_KEY)) {
+if (!lsGet(STORAGE_KEY)) {
   document.getElementById('win-buy-prompt').textContent = t.winBuyPrompt;
   const winBuyBtn = document.getElementById('win-buy-btn');
   winBuyBtn.textContent = t.winBuyCta;
-  winBuyBtn.href = LS_CHECKOUT_URL;
+  if (LS_CHECKOUT_URL.startsWith('https://')) {
+    winBuyBtn.href = LS_CHECKOUT_URL;
+  } else {
+    console.error('LS_CHECKOUT_URL is not configured');
+  }
   document.getElementById('win-buy-cta').style.display = 'block';
 }
 
@@ -506,11 +519,11 @@ document.getElementById('download-card-btn').addEventListener('click', async () 
 document.getElementById('cookie-text').textContent = t.cookieNotice;
 document.getElementById('cookie-dismiss').textContent = t.cookieDismiss;
 const COOKIE_KEY = 'cleanlist_cookie_dismissed';
-if (!localStorage.getItem(COOKIE_KEY)) {
+if (!lsGet(COOKIE_KEY)) {
   document.getElementById('cookie-notice').style.display = 'flex';
 }
 document.getElementById('cookie-dismiss').addEventListener('click', () => {
-  localStorage.setItem(COOKIE_KEY, '1');
+  lsSet(COOKIE_KEY, '1');
   document.getElementById('cookie-notice').style.display = 'none';
 });
 </script>
