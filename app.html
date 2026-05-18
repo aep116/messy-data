@@ -848,7 +848,7 @@ select.field-input { appearance: auto; cursor: pointer; }
           <div class="adv-section-label" id="preset-section-lbl"></div>
           <div class="preset-row">
             <span class="preset-lbl" id="preset-lbl"></span>
-            <select id="crm-preset">
+            <select id="crm-preset" aria-labelledby="preset-lbl">
               <option value="generic" id="opt-generic"></option>
               <option value="hubspot" id="opt-hubspot"></option>
               <option value="salesforce" id="opt-salesforce"></option>
@@ -1030,7 +1030,7 @@ select.field-input { appearance: auto; cursor: pointer; }
     <button class="modal-close" id="feedback-close">✕</button>
     <div class="modal-title" id="feedback-title"></div>
     <div class="field-row">
-      <label class="field-lbl" id="fb-type-lbl"></label>
+      <label class="field-lbl" id="fb-type-lbl" for="fb-type"></label>
       <select class="field-input" id="fb-type">
         <option value="" disabled selected>—</option>
         <option value="bug" id="opt-bug"></option>
@@ -1663,6 +1663,7 @@ let state = {
   showAllCols: false,
   redirectTimer: null,
   isProcessing: false,
+  isDownloading: false,
   isAlreadyClean: false,
   finalStats: null
 };
@@ -1928,7 +1929,7 @@ function runCleaning(settings) {
       showMsg('msg-file-err', 'An error occurred while processing your file. Please try again.');
       console.error(err);
     }
-  }, rowCount > OVERLAY_ROW_THRESHOLD ? 50 : 0);
+  }, rowCount > OVERLAY_ROW_THRESHOLD ? 300 : 0);
 }
 
 // ── Render preview ───────────────────────────────────────────────
@@ -2105,7 +2106,7 @@ function showDownload() {
     !state.cleanStats.colsRemoved && !state.cleanStats.dates && !state.cleanStats.phones &&
     !state.cleanStats.emailsCased && !state.cleanStats.namesCased;
   state.isAlreadyClean = isAlreadyClean;
-  state.isProcessing = false;
+  // state.isProcessing stays true until cleanAnother — guards double-click on #process-btn
 
   let summaryText = fmt(t.summaryLine, {
     orig: orig.toLocaleString(),
@@ -2262,6 +2263,7 @@ function cleanAnother() {
   state.finalStats = null;
   state.crmName = 'CSV';
   state.isProcessing = false;
+  state.isDownloading = false;
 
   // Reset UI
   resetFileInput();
@@ -2583,6 +2585,8 @@ function bindEvents() {
       document.getElementById('fuzzy-confirm-btn').click();
       return;
     }
+    if (state.isDownloading) return;
+    state.isDownloading = true;
     processFullFile();
   });
 

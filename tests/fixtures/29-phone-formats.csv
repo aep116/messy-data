@@ -1,0 +1,11 @@
+name,phone
+10digit_no_format,5551234567
+10digit_dots,555.123.4567
+10digit_dashes,555-123-4567
+10digit_already_formatted,(555) 123-4567
+11digit_with_1,15551234567
+international_uk,+44 20 7946 0958
+international_france,+33 1 42 86 83 26
+7digit_unchanged,123-4567
+9digit_unchanged,123456789
+empty_cell,

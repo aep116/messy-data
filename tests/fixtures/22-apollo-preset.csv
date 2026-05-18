@@ -1,0 +1,3 @@
+first_name,last_name,email,phone,sequence_name,step_number,email_open_count,email_click_count,reply_count,bounced,apollo_contact_id,account_id,apollo_account_id,stage,last_contacted_at,contact_stage_id,sequence_id,sequence_step_id,last_activity_date
+John,Smith,john@acme.com,5551234567,Outreach Seq,1,3,1,0,false,apid001,acct001,aacc001,Active,2024-01-01,cs001,seq001,ssi001,2024-01-01
+Jane,Doe,jane@acme.com,5559876543,Nurture Seq,2,1,0,1,false,apid002,acct002,aacc002,Replied,2024-01-02,cs002,seq002,ssi002,2024-01-02

@@ -1,0 +1,11 @@
+name,created_date
+iso_with_z,2024-03-15T10:30:00Z
+iso_with_offset,2024-03-15T10:30:00+05:30
+two_digit_year_lt50,03/15/24
+two_digit_year_ge50,03/15/65
+unrecognized_q1,Q1 2024
+unrecognized_spring,Spring 2024
+unrecognized_tbd,TBD
+empty_cell,
+ambiguous_mmdd,03/05/2024
+unambiguous_ddmm,15/03/2024
