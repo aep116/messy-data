@@ -120,9 +120,15 @@ body {
   margin-bottom: 32px;
   line-height: 1.5;
 }
+.locked-actions {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
 .btn-cta {
+  flex: 2;
   display: block;
-  width: 100%;
   background: var(--cta);
   color: #fff;
   border: none;
@@ -133,21 +139,23 @@ body {
   cursor: pointer;
   text-decoration: none;
   text-align: center;
-  margin-bottom: 16px;
   letter-spacing: 0.01em;
 }
 .btn-cta:hover { opacity: 0.92; }
-.already-paid-link {
+.restore-access-btn {
+  flex: 1;
   background: none;
-  border: none;
+  border: 1px solid var(--border);
   color: var(--text2);
   font-family: var(--font);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  text-decoration: underline;
-  padding: 4px;
+  padding: 12px 14px;
+  line-height: 1.3;
+  text-align: center;
 }
-.already-paid-link:hover { color: var(--text); }
+.restore-access-btn:hover { border-color: var(--text2); color: var(--text); }
 
 /* ── Tool view ──────────────────────────────────────────────────── */
 #tool-view { padding: 32px 0 100px; }
@@ -799,9 +807,11 @@ select.field-input { appearance: auto; cursor: pointer; }
   <div class="locked-card">
     <h1 class="locked-headline" id="locked-headline"></h1>
     <p class="locked-sub" id="locked-sub"></p>
-    <a id="locked-cta" href="#" class="btn-cta"></a>
+    <div class="locked-actions">
+      <a id="locked-cta" href="#" class="btn-cta"></a>
+      <button class="restore-access-btn" id="already-paid-btn"></button>
+    </div>
     <p id="locked-post-cta" style="font-size:13px;color:var(--text2);margin-top:10px;"></p>
-    <button class="already-paid-link" id="already-paid-btn"></button>
   </div>
 </div>
 
@@ -998,6 +1008,10 @@ select.field-input { appearance: auto; cursor: pointer; }
 
   <!-- Feedback widget button (unlocked only) -->
   <button id="feedback-btn"></button>
+
+  <div style="text-align:center;padding:8px 0 24px">
+    <button id="lost-access-btn" style="background:none;border:none;color:var(--text3);font-size:12px;font-family:var(--font);cursor:pointer;text-decoration:underline;padding:0">Lost access? Click here</button>
+  </div>
 </div><!-- /tool-view -->
 
 <!-- ── Processing overlay ────────────────────────────────────────── -->
@@ -1015,12 +1029,12 @@ select.field-input { appearance: auto; cursor: pointer; }
     <div class="modal-title" id="recovery-title"></div>
     <div class="field-row">
       <label class="field-lbl" id="recovery-email-lbl"></label>
-      <input type="email" class="field-input" id="recovery-email-input" placeholder="you@example.com">
+      <input type="text" class="field-input" id="recovery-email-input" placeholder="e.g. 12345 or ORD-12345" autocomplete="off" spellcheck="false">
       <div id="recovery-email-error" role="alert" aria-live="assertive" style="display:none;font-size:12px;color:var(--warn);margin-top:4px;line-height:1.4"></div>
     </div>
     <button class="btn-modal-submit" id="recovery-submit-btn">Submit</button>
     <div class="recovery-result" id="recovery-result"></div>
-    <p style="font-size:12px;color:var(--text3);margin-top:12px;line-height:1.5">Can't find your receipt? Email <a href="mailto:support@cleanlistapp.com" style="color:var(--accent)">support@cleanlistapp.com</a> with your order confirmation.</p>
+    <p style="font-size:12px;color:var(--text3);margin-top:12px;line-height:1.5">Can't find your order number? Search your email for <strong style="color:var(--text2)">'Your CleanList order'</strong> or email <a href="mailto:support@cleanlistapp.com" style="color:var(--accent)">support@cleanlistapp.com</a>.</p>
   </div>
 </div>
 
@@ -1097,9 +1111,9 @@ const i18n = {
     cookieDismiss:      'Got it',
     lockedHeadline:     'Clean your CRM export in seconds',
     lockedSubhead:      'Built for HubSpot, Salesforce, Apollo, and Mailchimp exports. Nothing uploaded. No account. $39 one-time.',
-    lockedCta:          'Get CleanList — $39 one-time',
+    lockedCta:          'Buy Access — $49',
     lockedPostCta:      'Pay once → instant access → no download, no account',
-    alreadyPaid:        'I already paid',
+    alreadyPaid:        'Already purchased? Restore access →',
     paymentConfirmed:   'Payment confirmed — you\'re in. Start cleaning below.',
     dropZone:           'Drop your CSV here',
     selectFile:         'Select CSV file',
@@ -1158,8 +1172,8 @@ const i18n = {
     feedbackSuccess:    'Thanks — we read every submission.',
     feedbackError:      'Something went wrong — please try again.',
     recoveryTitle:      'Restore Access',
-    recoveryEmailLbl:   'Order email address',
-    recoveryMsg:        'We don\'t store accounts, so we can\'t look you up automatically. Check your inbox for a receipt from Lemon Squeezy — it contains your access link. If you can\'t find it, email support@cleanlistapp.com with your order confirmation.',
+    recoveryEmailLbl:   'Enter your order number from your LemonSqueezy receipt email. It starts with #. You can find it by searching your email for \'Your CleanList order\'.',
+    recoveryMsg:        'Access restored. Loading your tool...',
     iosSaveInstruction: 'Your file is ready. Tap and hold the link below and choose Save to Files.',
     iosContinueBtn:     'I\'ve saved it — Continue',
     fuzzyCapWarning:    'This file has {n} rows. Fuzzy matching applies to the first 2,000 rows only.',
@@ -1176,7 +1190,7 @@ const i18n = {
     errNotCsvWithHelp:  'This doesn\'t appear to be a valid CSV file. If you have an Excel file, open it and export or save as CSV first.',
     summaryNoChanges:   'No changes were made — this file is identical to your original.',
     errPapaFailed:      'CSV processing library failed to load. Please refresh the page and try again.',
-    recoveryEmailInvalid: 'Please enter a valid email address.',
+    recoveryEmailInvalid: 'Please enter a valid order number (at least 4 characters).',
     keepSettings:       'Keep my settings for next file'
   }
 };
@@ -2611,9 +2625,12 @@ function bindEvents() {
   // Clean another
   document.getElementById('clean-another-btn').addEventListener('click', cleanAnother);
 
-  // Already paid
+  // Already paid / restore access
   document.getElementById('already-paid-btn').addEventListener('click', () => {
     openModal(document.getElementById('recovery-modal'), document.getElementById('already-paid-btn'));
+  });
+  document.getElementById('lost-access-btn').addEventListener('click', () => {
+    openModal(document.getElementById('recovery-modal'), document.getElementById('lost-access-btn'));
   });
 
   // Recovery modal
@@ -2626,19 +2643,22 @@ function bindEvents() {
     }
   });
   document.getElementById('recovery-submit-btn').addEventListener('click', () => {
-    const emailVal = document.getElementById('recovery-email-input').value.trim();
-    const emailErrorEl = document.getElementById('recovery-email-error');
-    emailErrorEl.style.display = 'none';
-    if (!emailVal) return;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailVal)) {
-      emailErrorEl.textContent = t.recoveryEmailInvalid;
-      emailErrorEl.style.display = 'block';
+    const raw = document.getElementById('recovery-email-input').value.trim();
+    const errorEl = document.getElementById('recovery-email-error');
+    errorEl.style.display = 'none';
+    if (!raw) return;
+    // Strip leading # then validate format
+    const token = raw.replace(/^#/, '');
+    if (!/^[a-zA-Z0-9_-]{4,64}$/.test(token)) {
+      errorEl.textContent = t.recoveryEmailInvalid;
+      errorEl.style.display = 'block';
       return;
     }
+    lsSet(STORAGE_KEY, token);
     const resultEl = document.getElementById('recovery-result');
     resultEl.style.display = 'block';
     resultEl.textContent = t.recoveryMsg;
+    setTimeout(() => window.location.reload(), 1200);
   });
 
   // Feedback button
