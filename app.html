@@ -894,11 +894,19 @@ select.field-input { appearance: auto; cursor: pointer; }
               <span class="toggle-switch"></span>
               <span class="toggle-lbl">Standardize phone numbers</span>
             </label>
+            <div style="padding:2px 0 6px 44px;font-size:12px;color:var(--text3);line-height:1.4">US format: (555) 123-4567 &nbsp;·&nbsp; International numbers left unchanged</div>
             <label class="toggle-row" id="row-date-fmt">
               <input type="checkbox" id="t-date-fmt" checked>
               <span class="toggle-switch"></span>
               <span class="toggle-lbl">Standardize dates (YYYY-MM-DD)</span>
             </label>
+            <div id="date-locale-row" style="padding:2px 0 6px 44px;font-size:12px;color:var(--text2);display:flex;align-items:center;gap:8px">
+              <span>Ambiguous dates (e.g. 01/02):</span>
+              <select id="date-locale" aria-label="Ambiguous date format: US MM/DD or UK DD/MM" style="font-family:var(--font);font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:2px 6px;cursor:pointer">
+                <option value="us">MM/DD &mdash; US</option>
+                <option value="uk">DD/MM &mdash; UK/EU</option>
+              </select>
+            </div>
             <label class="toggle-row" id="row-trim">
               <input type="checkbox" id="t-trim" checked>
               <span class="toggle-switch"></span>
@@ -1080,6 +1088,7 @@ select.field-input { appearance: auto; cursor: pointer; }
 const LS_CHECKOUT_URL    = 'REPLACE_WITH_LEMON_SQUEEZY_CHECKOUT_URL';
 const FORMSPARK_ENDPOINT = 'REPLACE_WITH_FORMSPARK_ENDPOINT';
 const STORAGE_KEY        = 'cleanlist_v1_order_id';
+const STORAGE_DATE_LOCALE = 'cleanlist_date_locale';
 
 // ── Tuning constants ─────────────────────────────────────────────
 const FUZZY_ROW_CAP           = 2000;   // O(n²) — 2k keeps main-thread block under ~3s
@@ -1089,7 +1098,7 @@ const PREVIEW_MAX_ROWS        = 50;
 const OVERLAY_ROW_THRESHOLD   = 5000;
 const PROGRESS_ROW_THRESHOLD  = 1000;
 const WARN_LARGE_ROWS         = 5000;
-const WARN_MANY_ROWS          = 50000;
+const WARN_MANY_ROWS          = 30000;
 const MAX_FILE_MB             = 100;
 const WARN_FILE_MB            = 20;
 const TWO_DIGIT_YEAR_CUTOFF   = 50;
@@ -1155,7 +1164,7 @@ const i18n = {
     errEmpty:           'This file appears to be empty.',
     errFileTooLarge:    'This file is too large to process (max 100MB). Try splitting it into smaller files first.',
     warnLargeFile:      'Large file — processing may take a moment. Your browser is doing all the work.',
-    warnManyRows:       'This file has {n} rows — we\'ll show a progress bar.',
+    warnManyRows:       'This file has {n} rows — processing may be slow on older devices. A progress bar will appear.',
     warnMediumRows:     'This file has {n} rows — processing may take a moment.',
     errNoHeaders:       'Couldn\'t detect column headers. Please ensure row 1 is a header row.',
     noticeOneCol:       'Only one column detected — trim and empty row removal will still run.',
@@ -1176,8 +1185,8 @@ const i18n = {
     recoveryMsg:        'Access restored. Loading your tool...',
     iosSaveInstruction: 'Your file is ready. Tap and hold the link below and choose Save to Files.',
     iosContinueBtn:     'I\'ve saved it — Continue',
-    fuzzyCapWarning:    'This file has {n} rows. Fuzzy matching applies to the first 2,000 rows only.',
-    fuzzySkippedCap:    'Fuzzy dedup skipped — file exceeds 2,000 row limit.',
+    fuzzyCapWarning:    'This file has {n} rows. Fuzzy name matching only runs on files up to 2,000 rows — exact duplicates are still removed.',
+    fuzzySkippedCap:    'Fuzzy name matching skipped — this file exceeds the 2,000-row limit. Exact duplicates were still removed. For fuzzy matching, split your file into smaller batches.',
     errNoFileSelected:  'Please select or paste a CSV file first.',
     xlsxLoadError:      'Excel download failed. Try CSV instead, or check your connection and try again.',
     purchasedBadge:     'Purchased',
@@ -1187,6 +1196,7 @@ const i18n = {
     cardDownloadError:  'Card download failed. Check your connection and try again.',
     feedbackMinChars:   'Minimum 10 characters',
     feedbackErrorWithContact: 'Something went wrong — please try again. Or email us at support@cleanlistapp.com',
+    errXlsxFile:        'Excel files (.xlsx/.xls) can\'t be processed directly. In Excel: File → Save As → CSV (.csv), then upload the CSV file.',
     errNotCsvWithHelp:  'This doesn\'t appear to be a valid CSV file. If you have an Excel file, open it and export or save as CSV first.',
     summaryNoChanges:   'No changes were made — this file is identical to your original.',
     errPapaFailed:      'CSV processing library failed to load. Please refresh the page and try again.',
@@ -1361,10 +1371,12 @@ function standardizePhone(val) {
 }
 
 /* Date standardization — 11 common formats → YYYY-MM-DD
-   MM/DD default for ambiguous two-part numeric dates.
-   If day part > 12 → unambiguously DD/MM.
+   locale='us' → MM/DD for ambiguous two-part numeric dates (default)
+   locale='uk' → DD/MM for ambiguous two-part numeric dates
+   If day part > 12 → unambiguously DD/MM regardless of locale.
    Only counts as a conversion when the value actually changes. */
-function standardizeDate(val) {
+function standardizeDate(val, locale) {
+  if (!locale) locale = 'us';
   if (!val) return { out: val, changed: false };
   const s = String(val).trim();
   if (!s) return { out: s, changed: false };
@@ -1418,7 +1430,8 @@ function standardizeDate(val) {
       let mon, day;
       if (a > 12) { day = a; mon = b; }       // a must be day
       else if (b > 12) { mon = a; day = b; }  // b must be day
-      else { mon = a; day = b; }              // ambiguous: MM/DD default
+      else if (locale === 'uk') { day = a; mon = b; }  // UK: DD/MM
+      else { mon = a; day = b; }              // US: MM/DD default
       out = `${m[3]}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     }
   }
@@ -1432,6 +1445,7 @@ function standardizeDate(val) {
       let mon, day;
       if (a > 12) { day = a; mon = b; }
       else if (b > 12) { mon = a; day = b; }
+      else if (locale === 'uk') { day = a; mon = b; }
       else { mon = a; day = b; }
       out = `${yr}-${String(mon).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     }
@@ -1634,7 +1648,7 @@ function cleanData(rawRows, rawHeaders, settings) {
         const r = { ...row };
         dateCols.forEach(col => {
           if (r[col]) {
-            const result = standardizeDate(r[col]);
+            const result = standardizeDate(r[col], settings.dateLocale);
             r[col] = result.out;
             if (result.changed) stats.dates++;
           }
@@ -1731,6 +1745,7 @@ function getSettings() {
     emptyCols:      document.getElementById('t-empty-cols').checked,
     dupHeaders:     document.getElementById('t-dup-headers').checked,
     fuzzy:          document.getElementById('t-fuzzy').checked,
+    dateLocale:     document.getElementById('date-locale').value,
     crmCols:        preset !== 'generic' ? preset : null,
     preset
   };
@@ -1773,6 +1788,11 @@ function handleFile(file) {
 
   // Validate extension + MIME
   const ext = file.name.split('.').pop().toLowerCase();
+  if (ext === 'xlsx' || ext === 'xls') {
+    showMsg('msg-file-err', t.errXlsxFile);
+    resetFileInput();
+    return;
+  }
   const ok = ext === 'csv' || file.type === 'text/csv' || file.type === 'text/plain';
   if (!ok) {
     showMsg('msg-file-err', t.errNotCsvWithHelp);
@@ -2110,7 +2130,7 @@ function processFullFile() {
 }
 
 function showDownload() {
-  const sec = ((Date.now() - state.startTime) / 1000).toFixed(1);
+  const sec = (Math.max((Date.now() - state.startTime) / 1000, 0.1)).toFixed(1);
   const orig  = state.parsedRows.length;
   const clean = state.cleanedRows.length;
   const removed = orig - clean;
@@ -2532,6 +2552,16 @@ function bindEvents() {
   // Preset change
   document.getElementById('crm-preset').addEventListener('change', e => {
     applyPreset(e.target.value);
+  });
+
+  // Date locale — load persisted value, wire save + toggle visibility with dateFmt
+  const dateLocaleEl = document.getElementById('date-locale');
+  const dateLocaleRow = document.getElementById('date-locale-row');
+  const savedLocale = lsGet(STORAGE_DATE_LOCALE) || 'us';
+  dateLocaleEl.value = savedLocale;
+  dateLocaleEl.addEventListener('change', e => lsSet(STORAGE_DATE_LOCALE, e.target.value));
+  document.getElementById('t-date-fmt').addEventListener('change', e => {
+    dateLocaleRow.style.display = e.target.checked ? 'flex' : 'none';
   });
 
   // Fuzzy toggle — show upfront cap warning for large files

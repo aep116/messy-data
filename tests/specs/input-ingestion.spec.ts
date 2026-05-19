@@ -258,12 +258,12 @@ test('TC-DG-14: single-column CSV shows info notice but upload proceeds', async 
   await expect(page.locator('#quick-clean-area')).toBeVisible();
 });
 
-// TC-DG-15 — CSV with >50,000 rows shows WARN_MANY_ROWS warning
-test('TC-DG-15: CSV with >50,000 rows shows progress bar warning', async ({ page }, testInfo) => {
+// TC-DG-15 — CSV with >30,000 rows shows WARN_MANY_ROWS warning
+test('TC-DG-15: CSV with >30,000 rows shows progress bar warning', async ({ page }, testInfo) => {
   test.setTimeout(120000);
   // Generate inline — too large for a fixture file
   const lines = ['first_name,last_name,email'];
-  for (let i = 0; i < 51000; i++) {
+  for (let i = 0; i < 31000; i++) {
     lines.push(`User${i},Test${i},user${i}@example.com`);
   }
   const csv = lines.join('\n');

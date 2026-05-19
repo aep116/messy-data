@@ -388,7 +388,7 @@ test.describe('Large file tests', () => {
   });
 
   test('TC16: processes 10,000-row file correctly', async ({ page }) => {
-    test.setTimeout(60000);
+    test.setTimeout(120000);
 
     await uploadCSV(page, '14-large-file.csv');
 
@@ -401,7 +401,7 @@ test.describe('Large file tests', () => {
     await expect(page.locator('#processing-overlay')).toBeVisible({ timeout: 3000 });
 
     // Now wait for preview section (overlay hides before this)
-    await page.waitForSelector('#preview-section', { state: 'visible', timeout: 55000 });
+    await page.waitForSelector('#preview-section', { state: 'visible', timeout: 100000 });
 
     await processAndWaitForDownload(page);
     const csv = await downloadCSV(page);

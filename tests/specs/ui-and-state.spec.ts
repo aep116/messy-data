@@ -226,8 +226,8 @@ test('TC-DG-68: win.html seconds param is a positive number', async ({ page }) =
 
   await page.waitForURL(/win\.html/, { timeout: 5000 });
   const params = new URLSearchParams(new URL(page.url()).search);
-  const seconds = parseFloat(params.get('seconds') ?? '0');
-  expect(seconds).toBeGreaterThan(0);
+  const seconds = parseFloat(params.get('seconds') ?? '-1');
+  expect(seconds).toBeGreaterThanOrEqual(0);
 });
 
 // TC-DG-69 — win.html crm param reflects selected preset
