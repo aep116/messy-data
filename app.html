@@ -2079,11 +2079,18 @@ function processCSVText(text, filename) {
     return;
   }
 
+  // Normalize backslash-escaped quotes to RFC 4180 doubled-quote style before parsing.
+  // Apollo CSV exports embed JSON in phone_numbers using \" escaping; PapaParse expects "".
+  // Without this, PapaParse misreads the closing " as end-of-field and shifts all subsequent columns.
+  // Also prevents ' (apostrophe) from being misread as a CSV delimiter in any row.
+  text = text.replace(/\\"/g, '""');
+
   const result = Papa.parse(text, {
     header: true,
     skipEmptyLines: 'greedy',
     dynamicTyping: false,
-    delimiter: ''
+    delimiter: '',
+    quoteChar: '"'
   });
 
   if (result.errors && result.errors.length > 0 && result.data.length === 0) {
