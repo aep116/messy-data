@@ -1350,6 +1350,34 @@ function titleCase(val) {
     .replace(/\b(Mac)([a-z])/g, (_, pfx, ch) => pfx + ch.toUpperCase());
 }
 
+// Particles lowercase everywhere, including field start (French, Italian, Spanish, Arabic)
+const PARTICLES_ALWAYS = [
+  'de la', 'de las', 'de los', 'de le',
+  'della', 'degli', 'delle', 'binti', 'binte', 'ibn', 'y', 'e'
+];
+// Particles lowercase only after separator, not at field start (Dutch, German, Nordic)
+const PARTICLES_MIDDLE = [
+  'van der', 'van den', 'van de', 'von der', 'op den', 'op de',
+  'van', 'von', 'de', 'di', 'du', 'da', 'del', 'des',
+  'le', 'la', 'les', 'lo', 'af', 'av', 'of',
+  'zu', 'zum', 'zur', 'op', 'bin'
+];
+
+/* Lowercase nobility particles at appropriate positions after title casing */
+function applyNobilityParticles(s) {
+  if (!s) return s;
+  let r = s;
+  for (const p of PARTICLES_ALWAYS) {
+    const esc = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    r = r.replace(new RegExp(`(^|[ \\t\\-'])${esc}(?=[ \\-]|$)`, 'gi'), (_, sep) => sep + p);
+  }
+  for (const p of PARTICLES_MIDDLE) {
+    const esc = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    r = r.replace(new RegExp(`([ \\t\\-'])${esc}(?=[ \\-]|$)`, 'gi'), (_, sep) => sep + p);
+  }
+  return r;
+}
+
 /* Phone standardization: 10-digit → (XXX) XXX-XXXX, +1XXXXXXXXXX → (XXX) XXX-XXXX, international preserved */
 function standardizePhone(val) {
   if (!val) return { out: val, changed: false };
@@ -1458,13 +1486,16 @@ function standardizeDate(val, locale) {
   return { out, changed: out !== s };
 }
 
-/* Validate email format: requires local@domain.tld with no empty parts */
+/* Validate email: must have non-empty local@domain.tld — catches no-@, starts/ends with @ */
 function isValidEmail(email) {
   if (!email) return true;
-  const parts = email.split('@');
-  if (parts.length !== 2) return false;
-  const [local, domain] = parts;
-  if (!local.length) return false;
+  const s = String(email).trim();
+  if (!s) return true;
+  const atIdx = s.indexOf('@');
+  if (atIdx <= 0) return false;                    // no @ or starts with @
+  if (atIdx === s.length - 1) return false;        // ends with @
+  if (s.indexOf('@', atIdx + 1) !== -1) return false; // multiple @
+  const domain = s.slice(atIdx + 1);
   const domainParts = domain.split('.');
   return domainParts.length >= 2 && domainParts.every(p => p.length > 0);
 }
@@ -1473,8 +1504,9 @@ function isValidEmail(email) {
 function isRowEmpty(row, headers) {
   const identityTypes = new Set(['email', 'firstName', 'lastName', 'fullName', 'phone', 'company']);
   const identityHeaders = headers.filter(h => identityTypes.has(detectColType(h)));
-  const checkHeaders = identityHeaders.length > 0 ? identityHeaders : headers;
-  return checkHeaders.every(h => !row[h] || String(row[h]).trim() === '');
+  // If no identity columns detected (custom schema), don't remove — avoids destroying unknown data
+  if (identityHeaders.length === 0) return false;
+  return identityHeaders.every(h => !row[h] || String(row[h]).trim() === '');
 }
 
 /* Fuzzy dedup — Levenshtein on name+company string
@@ -1668,7 +1700,7 @@ function cleanData(rawRows, rawHeaders, settings) {
         nameCols.forEach(col => {
           if (r[col]) {
             const orig = String(r[col]);
-            r[col] = titleCase(orig);
+            r[col] = applyNobilityParticles(titleCase(orig));
             if (r[col] !== orig) stats.namesCased++;
           }
         });
