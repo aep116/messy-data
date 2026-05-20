@@ -1315,9 +1315,14 @@ const CRM_COLS = {
     'apollo_contact_id','apollo_account_id','stage'
   ],
   mailchimp: [
-    'UNSUB','BOUNCE','STATUS','MEMBER_RATING','OPTIN_TIME','OPTIN_IP',
+    'STATUS','MEMBER_RATING','OPTIN_TIME','OPTIN_IP',
     'CONFIRM_TIME','CONFIRM_IP','LATITUDE','LONGITUDE','GMTOFF','DSTOFF',
-    'CC','REGION','LAST_CHANGED','LEID','EUID','NOTES'
+    'CC','REGION','LAST_CHANGED','LEID','EUID','NOTES',
+    'BIRTHDAY','ANNIVERSARY','TIMEZONE','TAGS',
+    'MC_LOCATION','MC_CDATE','MC_LDATE','MC_LANGUAGE',
+    'MC_TOTAL_EMAILS_SENT','MC_OPEN_RATE','MC_CLICK_RATE',
+    'UNSUBSCRIBE_REASON','CAMPAIGN_ID',
+    'MERGE6','MERGE7','MERGE8','MERGE9','MERGE10','MERGE11','MERGE12'
   ]
 };
 
@@ -1349,7 +1354,7 @@ const PRESET_CONFIGS = {
   },
   mailchimp: {
     dedupExact: false, dedupEmail: true, lowercaseEmail: true,
-    titleCase: false, phoneFmt: false, dateFmt: false,
+    titleCase: true, phoneFmt: true, dateFmt: false,
     trim: true, emptyRows: true, emptyCols: false,
     dupHeaders: true, fuzzy: false
   }
@@ -1596,7 +1601,7 @@ function runFuzzyDedup(rows, headers, colIdx, threshold) {
 
 /* ── Main cleaning function ─────────────────────────────────────── */
 function cleanData(rawRows, rawHeaders, settings) {
-  const stats = { dupes: 0, emptyRows: 0, colsRemoved: 0, dates: 0, phones: 0, dupHeaders: 0, emailsCased: 0, namesCased: 0, deletedRows: 0, invalidEmails: 0 };
+  const stats = { dupes: 0, emptyRows: 0, colsRemoved: 0, dates: 0, phones: 0, dupHeaders: 0, emailsCased: 0, namesCased: 0, deletedRows: 0, invalidEmails: 0, unsubscribed: 0 };
   let headers = [...rawHeaders];
   let rows = rawRows.map(r => ({ ...r }));
 
@@ -1649,6 +1654,24 @@ function cleanData(rawRows, rawHeaders, settings) {
     }
   }
 
+  // 0.6. Mailchimp: flag unsubscribed/cleaned/archived contacts before STATUS column is stripped
+  if (settings.preset === 'mailchimp') {
+    const statusCol = headers.find(h => h.toLowerCase() === 'status');
+    if (statusCol) {
+      const flagged = new Set(['unsubscribed', 'cleaned', 'archived']);
+      let addedCol = false;
+      rows = rows.map(row => {
+        const val = String(row[statusCol] || '').trim().toLowerCase();
+        if (flagged.has(val)) {
+          if (!addedCol) { headers.push('do_not_import'); addedCol = true; }
+          stats.unsubscribed++;
+          return { ...row, do_not_import: row[statusCol] };
+        }
+        return row;
+      });
+    }
+  }
+
   // 1. Remove duplicate column headers (keep first occurrence)
   if (settings.dupHeaders) {
     const seen = new Set();
@@ -1674,8 +1697,9 @@ function cleanData(rawRows, rawHeaders, settings) {
     const removeSet = new Set(
       CRM_COLS[settings.crmCols].map(c => c.toLowerCase())
     );
-    const isHubspot = settings.crmCols === 'hubspot';
-    const isApollo  = settings.crmCols === 'apollo';
+    const isHubspot   = settings.crmCols === 'hubspot';
+    const isApollo    = settings.crmCols === 'apollo';
+    const isMailchimp = settings.crmCols === 'mailchimp';
     const origLen = headers.length;
     headers = headers.filter(h => {
       const hl = h.toLowerCase();
@@ -1688,6 +1712,10 @@ function cleanData(rawRows, rawHeaders, settings) {
         hl.startsWith('salesforce_') || hl.startsWith('crm_') ||
         hl.startsWith('hs_') || hl.startsWith('hubspot_') ||
         hl.startsWith('outreach_') || hl.startsWith('salesloft_') || hl.startsWith('marketo_')
+      )) return false;
+      if (isMailchimp && (
+        hl.startsWith('mc_') || /^merge\d+$/.test(hl) ||
+        hl.startsWith('hs_') || hl.startsWith('hubspot_')
       )) return false;
       return true;
     });
@@ -2207,6 +2235,7 @@ function renderPreview(hasFuzzy) {
   const emailsCased = cleanStats.emailsCased || 0;
   const namesCased = cleanStats.namesCased || 0;
 
+  if (cleanStats.unsubscribed) addStat('unsubscribed contacts flagged — review before importing', cleanStats.unsubscribed);
   if (cleanStats.deletedRows) addStat('IsDeleted records removed', cleanStats.deletedRows);
   if (totalDupes) addStat('duplicates removed', totalDupes);
   if (emptyRowsRemoved) addStat('empty rows dropped', emptyRowsRemoved);
