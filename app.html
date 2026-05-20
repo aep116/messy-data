@@ -1233,14 +1233,18 @@ function escapeHTML(str) {
 
 // ── Column detection maps (EQUALS-ONLY, case-insensitive) ────────
 const COL_MAP = {
-  email:     ['email', 'e-mail', 'email address', 'emailaddress'],
-  firstName: ['first name', 'firstname', 'first_name', 'fname', 'given name'],
-  lastName:  ['last name', 'lastname', 'last_name', 'lname', 'surname', 'family name'],
-  fullName:  ['full name', 'fullname', 'full_name', 'contact name'],
+  email:     ['email', 'e-mail', 'email address', 'emailaddress',
+              'work_email', 'work email', 'email_address', 'primary_email', 'contact_email'],
+  firstName: ['first name', 'firstname', 'first_name', 'fname', 'given name', 'given_name'],
+  lastName:  ['last name', 'lastname', 'last_name', 'lname', 'surname', 'family name', 'family_name'],
+  fullName:  ['full name', 'fullname', 'full_name', 'contact name', 'contact_name', 'name'],
   phone:     ['phone', 'mobile', 'cell', 'telephone', 'tel', 'phone number', 'mobile number',
               'mobilephone', 'homephone', 'otherphone', 'assistantphone', 'direct',
-              'work phone', 'business phone', 'phone_number', 'mobile_number'],
-  company:   ['company', 'organization', 'organisation', 'company name', 'account name', 'employer'],
+              'work phone', 'business phone', 'phone_number', 'mobile_number',
+              'mobile_phone', 'home_phone', 'other_phone', 'assistant_phone',
+              'work_phone', 'direct_phone', 'corporate_phone', 'direct phone', 'gd_phone'],
+  company:   ['company', 'organization', 'organisation', 'company name', 'account name', 'employer',
+              'gd_company', 'company_name', 'organization_name'],
   date:      ['date', 'created date', 'modified date', 'updated date', 'timestamp', 'joined',
               'signup date', 'created at', 'updated at', 'created_date', 'updated_date',
               'modified_date', 'signup_date']
@@ -1249,14 +1253,35 @@ const COL_MAP = {
 // ── CRM system column removal arrays ────────────────────────────
 const CRM_COLS = {
   hubspot: [
-    'hs_object_id','createdate','hs_lastmodifieddate','hubspot_owner_id',
-    'hs_pipeline','hs_pipeline_stage','hs_deal_stage_probability',
-    'hs_ticket_priority','hs_all_owner_ids','hs_created_by_user_id',
-    'hs_updated_by_user_id','hs_is_contact','hs_merged_object_ids',
-    'hs_unique_creation_key','hs_user_ids_of_all_owners',
-    'num_associated_deals','num_notes','hs_sequences_is_enrolled',
-    'hs_sequences_enrolled_count','notes_last_updated',
-    'notes_next_activity_date','num_contacted_notes','num_associated_contacts'
+    // Contact metadata
+    'vid','canonical-vid','merged-vids','portal-id','is-contact','hubspot_vid',
+    'hs_object_id','hubspot_owner_id','hs_all_owner_ids','hs_all_team_ids',
+    'hs_created_by_user_id','hs_updated_by_user_id','hs_user_ids_of_all_owners',
+    'hs_unique_creation_key','hs_merged_object_ids','hs_is_contact',
+    // Dates and timestamps
+    'createdate','lastmodifieddate','hs_lastmodifieddate',
+    'hs_analytics_last_visit_timestamp','hs_analytics_first_visit_timestamp',
+    'notes_last_updated','notes_next_activity_date',
+    // Pipeline and stage
+    'hs_pipeline','hs_pipeline_stage','hs_deal_stage_probability','hs_ticket_priority',
+    'hs_lead_status','hs_lifecycle_stage','hs_is_unworked','contact_stage_id',
+    // Email and sequence
+    'hs_email_bounce','hs_email_optout','hs_email_optout_6766036','hs_email_optout_8209992',
+    'hs_sequences_is_enrolled','hs_sequences_enrolled_count',
+    'emailer_campaign_ids','contact_campaign_statuses',
+    // Analytics
+    'hs_analytics_source','hs_analytics_source_data_1','hs_analytics_source_data_2',
+    'hs_analytics_num_visits','hs_analytics_num_page_views',
+    // Counts and notes
+    'num_associated_deals','num_notes','num_contacted_notes','num_associated_contacts',
+    'num_conversion_events',
+    // IDs and integrations
+    'marketo_id','outreach_id','salesloft_id',
+    'salesforce_id','salesforce_lead_id','salesforce_contact_id',
+    'salesforce_account_id','salesforce_owner_id',
+    // Tracking
+    'ip_city','ip_state','ip_country',
+    'optin_time','optin_ip','confirm_time','confirm_ip','leid','euid'
   ],
   salesforce: [
     'Id','OwnerId','RecordTypeId','CreatedById','LastModifiedById',
@@ -1286,7 +1311,7 @@ const PRESET_CONFIGS = {
   },
   hubspot: {
     dedupExact: false, dedupEmail: true, lowercaseEmail: true,
-    titleCase: false, phoneFmt: true, dateFmt: true,
+    titleCase: true, phoneFmt: true, dateFmt: true,
     trim: true, emptyRows: true, emptyCols: false,
     dupHeaders: true, fuzzy: false
   },
@@ -1588,15 +1613,24 @@ function cleanData(rawRows, rawHeaders, settings) {
     }
   }
 
-  // 2. Remove CRM system columns
+  // 2. Remove CRM system columns (exact list + pattern-based for HubSpot)
   if (settings.crmCols) {
     const removeSet = new Set(
       CRM_COLS[settings.crmCols].map(c => c.toLowerCase())
     );
+    const isHubspot = settings.crmCols === 'hubspot';
     const origLen = headers.length;
-    headers = headers.filter(h => !removeSet.has(h.toLowerCase()));
+    headers = headers.filter(h => {
+      const hl = h.toLowerCase();
+      if (removeSet.has(hl)) return false;
+      if (isHubspot && (
+        hl.startsWith('hs_') || hl.startsWith('hubspot_') ||
+        hl.startsWith('num_') || hl.startsWith('notes_') || hl.startsWith('ip_')
+      )) return false;
+      return true;
+    });
     stats.colsRemoved += origLen - headers.length;
-    if (stats.colsRemoved > 0) {
+    if (origLen - headers.length > 0) {
       rows = rows.map(row => {
         const newRow = {};
         headers.forEach(h => { newRow[h] = row[h]; });
