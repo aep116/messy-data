@@ -1237,7 +1237,9 @@ const COL_MAP = {
   firstName: ['first name', 'firstname', 'first_name', 'fname', 'given name'],
   lastName:  ['last name', 'lastname', 'last_name', 'lname', 'surname', 'family name'],
   fullName:  ['full name', 'fullname', 'full_name', 'contact name'],
-  phone:     ['phone', 'mobile', 'cell', 'telephone', 'tel', 'phone number', 'mobile number'],
+  phone:     ['phone', 'mobile', 'cell', 'telephone', 'tel', 'phone number', 'mobile number',
+              'mobilephone', 'homephone', 'otherphone', 'assistantphone', 'direct',
+              'work phone', 'business phone', 'phone_number', 'mobile_number'],
   company:   ['company', 'organization', 'organisation', 'company name', 'account name', 'employer'],
   date:      ['date', 'created date', 'modified date', 'updated date', 'timestamp', 'joined',
               'signup date', 'created at', 'updated at', 'created_date', 'updated_date',
@@ -1258,7 +1260,8 @@ const CRM_COLS = {
   ],
   salesforce: [
     'Id','OwnerId','RecordTypeId','CreatedById','LastModifiedById',
-    'SystemModstamp','IsDeleted','MasterRecordId'
+    'SystemModstamp','IsDeleted','MasterRecordId',
+    'CreatedDate','LastModifiedDate','LastActivityDate','LastViewedDate','LastReferencedDate'
   ],
   apollo: [
     'sequence_name','step_number','email_open_count','email_click_count',
@@ -1288,7 +1291,7 @@ const PRESET_CONFIGS = {
     dupHeaders: true, fuzzy: false
   },
   salesforce: {
-    dedupExact: false, dedupEmail: true, lowercaseEmail: false,
+    dedupExact: false, dedupEmail: true, lowercaseEmail: true,
     titleCase: true, phoneFmt: true, dateFmt: false,
     trim: true, emptyRows: true, emptyCols: false,
     dupHeaders: true, fuzzy: false
@@ -1455,9 +1458,12 @@ function standardizeDate(val, locale) {
   return { out, changed: out !== s };
 }
 
-/* Check if a row is entirely empty/whitespace */
+/* Check if a row has no contact identity data (email, name, phone, company) */
 function isRowEmpty(row, headers) {
-  return headers.every(h => !row[h] || String(row[h]).trim() === '');
+  const identityTypes = new Set(['email', 'firstName', 'lastName', 'fullName', 'phone', 'company']);
+  const identityHeaders = headers.filter(h => identityTypes.has(detectColType(h)));
+  const checkHeaders = identityHeaders.length > 0 ? identityHeaders : headers;
+  return checkHeaders.every(h => !row[h] || String(row[h]).trim() === '');
 }
 
 /* Fuzzy dedup — Levenshtein on name+company string
@@ -1622,18 +1628,22 @@ function cleanData(rawRows, rawHeaders, settings) {
     }
   }
 
-  // 10. Standardize phone numbers
-  if (settings.phoneFmt && colIdx.phone !== undefined) {
-    const phoneCol = headers[colIdx.phone];
-    rows = rows.map(row => {
-      const r = { ...row };
-      if (r[phoneCol]) {
-        const result = standardizePhone(r[phoneCol]);
-        r[phoneCol] = result.out;
-        if (result.changed) stats.phones++;
-      }
-      return r;
-    });
+  // 10. Standardize phone numbers (all phone-pattern columns)
+  if (settings.phoneFmt) {
+    const phoneCols = headers.filter(h => detectColType(h) === 'phone');
+    if (phoneCols.length > 0) {
+      rows = rows.map(row => {
+        const r = { ...row };
+        phoneCols.forEach(col => {
+          if (r[col]) {
+            const result = standardizePhone(r[col]);
+            r[col] = result.out;
+            if (result.changed) stats.phones++;
+          }
+        });
+        return r;
+      });
+    }
   }
 
   // 11. Standardize dates
