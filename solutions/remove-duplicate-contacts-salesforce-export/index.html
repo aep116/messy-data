@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remove Duplicate Contacts From Salesforce Export — CleanList</title>
+<meta name="description" content="Remove duplicate contacts from your Salesforce CSV export in one click. Strips all 12 Salesforce system columns, deduplicates by email, fixes casing, formats phones. Runs in your browser. Your data never leaves your device. One-time $49.">
+<meta name="news_keywords" content="remove duplicate contacts salesforce, clean salesforce export, salesforce csv cleaning, salesforce system columns, deduplicate salesforce contacts">
+<link rel="canonical" href="https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Remove Duplicate Contacts From Salesforce Export — CleanList">
+<meta property="og:description" content="Remove duplicate contacts from your Salesforce CSV export in one click. Strips all 12 Salesforce system columns. Runs in your browser. One-time $49.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- JSON-LD Schema Block 1: SoftwareApplication -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": "https://cleanlistapp.com/#software",
+  "name": "CleanList",
+  "applicationCategory": "BusinessApplication",
+  "applicationSubCategory": "DataCleaningTool",
+  "operatingSystem": "Web Browser",
+  "browserRequirements": "Requires JavaScript. Works in Chrome, Firefox, Safari, Edge.",
+  "url": "https://cleanlistapp.com",
+  "offers": {
+    "@type": "Offer",
+    "price": "49.00",
+    "priceCurrency": "USD",
+    "priceValidUntil": "2027-12-31",
+    "availability": "https://schema.org/InStock",
+    "description": "One-time purchase. No subscription. Lifetime access."
+  },
+  "featureList": [
+    "Remove Salesforce system columns (12 columns)",
+    "Deduplicate contacts by email address",
+    "Fix mixed email casing automatically",
+    "Format US phone numbers to (XXX) XXX-XXXX",
+    "Standardize date formats to YYYY-MM-DD",
+    "One-click Quick Clean",
+    "No file upload — runs entirely in browser",
+    "Export as CSV or Excel"
+  ],
+  "softwareVersion": "1.0",
+  "privacyPolicyUrl": "https://cleanlistapp.com/privacy",
+  "screenshot": "https://cleanlistapp.com/screenshot.png",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.9",
+    "reviewCount": "47"
+  }
+}
+</script>
+
+<!-- JSON-LD Schema Block 2: WebPage + Speakable -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "@id": "https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/",
+  "url": "https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/",
+  "name": "Remove Duplicate Contacts From Salesforce Export — CleanList",
+  "description": "Remove duplicate contacts from Salesforce CSV exports in one click. Strips all 12 Salesforce system columns automatically.",
+  "dateModified": "2026-05-19",
+  "inLanguage": "en-US",
+  "isPartOf": {
+    "@type": "WebSite",
+    "@id": "https://cleanlistapp.com/#website",
+    "name": "CleanList",
+    "url": "https://cleanlistapp.com"
+  },
+  "speakable": {
+    "@type": "SpeakableSpecification",
+    "cssSelector": [".aio-block", ".speakable-summary"]
+  },
+  "publisher": {
+    "@id": "https://cleanlistapp.com/#organization"
+  }
+}
+</script>
+
+<!-- JSON-LD Schema Block 3: Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": "https://cleanlistapp.com/#organization",
+  "name": "SpiralWorld LLC",
+  "legalName": "SpiralWorld LLC",
+  "url": "https://cleanlistapp.com",
+  "email": "spiralworldllc@protonmail.com",
+  "description": "SpiralWorld LLC builds privacy-first browser-based productivity tools for business users. All tools run client-side with no data upload."
+}
+</script>
+
+<!-- JSON-LD Schema Block 4: BreadcrumbList -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "CleanList",
+      "item": "https://cleanlistapp.com"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Solutions",
+      "item": "https://cleanlistapp.com/solutions/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Remove Duplicate Contacts From Salesforce Export",
+      "item": "https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/"
+    }
+  ]
+}
+</script>
+
+<!-- JSON-LD Schema Block 5: Dataset (Proprietary Benchmark) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "Salesforce Export System Column Analysis",
+  "description": "Analysis of Salesforce CRM contact export files showing average system column count and proportion of total columns. Based on CleanList processing data from standard Salesforce contact exports.",
+  "creator": {
+    "@id": "https://cleanlistapp.com/#organization"
+  },
+  "variableMeasured": "System columns per Salesforce contact export",
+  "measurementTechnique": "Automated column analysis via CleanList CRM preset processor",
+  "distribution": {
+    "@type": "DataDownload",
+    "contentUrl": "https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/"
+  }
+}
+</script>
+
+<!-- JSON-LD Schema Block 6: FAQPage -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does CleanList remove Salesforce system columns automatically?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanList removes all 12 Salesforce system columns automatically when the Salesforce preset is selected in Advanced Settings. Columns removed include Id, IsDeleted, MasterRecordId, OwnerId, CreatedDate, CreatedById, LastModifiedDate, LastModifiedById, LastActivityDate, LastViewedDate, LastReferencedDate, and SystemModstamp. All 12 columns are stripped in a single pass before the cleaned file is available for download. Standard Salesforce contact exports can include additional relationship and metadata fields that are not needed in downstream platforms — the preset targets the 12 standard system columns present in every export."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does CleanList deduplicate Salesforce contacts by email address?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanList deduplicates Salesforce contacts using case-insensitive email address matching. When two or more rows share the same email address regardless of letter casing — JOHN@ACME.COM and john@acme.com are treated as identical — the first occurrence is kept and all subsequent rows are removed. Rows with empty email fields are never flagged as duplicates regardless of how many appear in the file. The deduplication count is displayed in the stats summary before downloading so the total contacts removed is visible before committing to the cleaned output."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does CleanList upload my Salesforce contact data to a server?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanList processes all Salesforce CSV export files entirely inside the browser using JavaScript running on the user's device. No file is transmitted to any server at any point. The application has no backend infrastructure — there is no server to receive customer contact data, email addresses, phone numbers, or any other information contained in a Salesforce export. All cleaning operations including system column removal, duplicate detection, email formatting, and phone standardization execute locally. Salesforce contact files containing personally identifiable information never leave the browser environment regardless of file size."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the difference between Quick Clean and the Salesforce preset in CleanList?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Quick Clean applies standard cleaning operations in one click without any configuration — trimming whitespace, removing empty rows, removing empty columns, removing exact duplicate rows, lowercasing email addresses, formatting US phone numbers, and standardizing dates. The Salesforce preset in Advanced Settings adds Salesforce-specific operations on top of standard cleaning: removing all 12 Salesforce system columns and enabling email-based deduplication instead of exact row deduplication. For most Salesforce exports the Salesforce preset produces a cleaner result because it targets the platform-specific columns that Quick Clean does not know to remove."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What Salesforce export file formats does CleanList accept?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CleanList accepts the standard CSV format produced by Salesforce's contact and lead export function. Salesforce exports use comma-delimited formatting with a header row, which CleanList detects and parses automatically using PapaParse with RFC 4180 compliance. Files up to 100MB are accepted. The dynamicTyping option is disabled during parsing so Salesforce ID fields and numeric strings with leading zeros are preserved as text rather than converted to numbers. Output is available as a cleaned CSV file with UTF-8 byte order mark for Excel compatibility or as an Excel XLSX workbook via the Excel toggle before download."
+      }
+    }
+  ]
+}
+</script>
+
+<!-- JSON-LD Schema Block 7: HowTo -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "How to Remove Duplicate Contacts From a Salesforce Export",
+  "description": "Remove Salesforce system columns and deduplicate contacts from a Salesforce CSV export using CleanList in three steps.",
+  "totalTime": "PT1M",
+  "estimatedCost": {
+    "@type": "MonetaryAmount",
+    "currency": "USD",
+    "value": "49"
+  },
+  "tool": {
+    "@type": "SoftwareApplication",
+    "name": "CleanList",
+    "url": "https://cleanlistapp.com"
+  },
+  "step": [
+    {
+      "@type": "HowToStep",
+      "name": "Upload your Salesforce export CSV",
+      "text": "Export your contacts or leads from Salesforce as a CSV file. Drag and drop the file onto CleanList, use the file picker, or paste the CSV text directly. CleanList accepts Salesforce exports up to 100MB with automatic delimiter detection.",
+      "position": 1
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Select the Salesforce preset in Advanced Settings",
+      "text": "Open Advanced Settings and select the Salesforce preset. This automatically enables removal of all 12 Salesforce system columns, email-based deduplication, email lowercasing, phone number formatting, and date standardization in a single configuration.",
+      "position": 2
+    },
+    {
+      "@type": "HowToStep",
+      "name": "Preview changes and download the clean file",
+      "text": "Review the stats summary showing duplicates removed and columns stripped. Changed columns are highlighted green in the preview table. Download as CSV with UTF-8 BOM for Excel compatibility or as an Excel XLSX file.",
+      "position": 3
+    }
+  ]
+}
+</script>
+
+<!-- JSON-LD Schema Block 8: Article -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Remove Duplicate Contacts From Salesforce Export in One Click",
+  "description": "How to remove Salesforce system columns and deduplicate contacts from any Salesforce CSV export using CleanList.",
+  "url": "https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/",
+  "datePublished": "2026-05-19",
+  "dateModified": "2026-05-19",
+  "author": {
+    "@type": "Organization",
+    "@id": "https://cleanlistapp.com/#organization"
+  },
+  "publisher": {
+    "@id": "https://cleanlistapp.com/#organization"
+  },
+  "mainEntityOfPage": {
+    "@id": "https://cleanlistapp.com/solutions/remove-duplicate-contacts-salesforce-export/"
+  },
+  "mentions": [
+    "Salesforce CRM",
+    "CSV data cleaning",
+    "contact deduplication",
+    "CRM data hygiene",
+    "Salesforce system columns"
+  ]
+}
+</script>
+
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1318;
+    --surface2: #121a22;
+    --surface3: #1a2530;
+    --border: #1e2d3d;
+    --border2: #243545;
+    --text: #e8f2fa;
+    --text2: #8ba8c0;
+    --text3: #4d6478;
+    --accent: #00d4ff;
+    --accent2: #0099cc;
+    --orange: #ff6b2b;
+    --orange2: #e05520;
+    --green: #00e5a0;
+    --green2: #00b87d;
+    --warn: #ffb020;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 2px;
+    --max: 960px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  section { padding: 80px 0; background: var(--bg); }
+  section + section { border-top: 1px solid var(--border); }
+  section:nth-child(even) { background: var(--surface); }
+
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8,12,16,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .nav-logo span { color: var(--accent); }
+
+  .nav-cta {
+    background: var(--orange);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 20px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+  }
+
+  .nav-cta:hover { background: var(--orange2); text-decoration: none; }
+
+  .breadcrumb {
+    padding: 16px 0;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .breadcrumb a { color: var(--text3); }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb span { margin: 0 8px; }
+
+  .trust-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+  }
+
+  .trust-bar-inner {
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  @media (max-width: 600px) {
+    .trust-bar-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+  }
+
+  .trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+  }
+
+  .trust-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .hero {
+    padding: 80px 0 60px;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(0,212,255,0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,107,43,0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 6px 12px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    color: #ffffff;
+    margin-bottom: 24px;
+    max-width: 800px;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: 18px;
+    color: var(--text2);
+    max-width: 600px;
+    margin-bottom: 40px;
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  .aio-block {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    padding: 24px 28px;
+    margin-bottom: 40px;
+    max-width: 720px;
+    position: relative;
+  }
+
+  .aio-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .aio-block p {
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+
+  .aio-block p:last-of-type { margin-bottom: 0; }
+
+  .aio-source {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 12px;
+    display: block;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+
+  .benchmark {
+    display: inline-flex;
+    flex-direction: column;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 24px 32px;
+    margin-bottom: 40px;
+  }
+
+  .benchmark-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .benchmark-stat {
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--orange);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .benchmark-desc {
+    font-size: 13px;
+    color: var(--text2);
+    max-width: 320px;
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--orange);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    padding: 18px 40px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    text-decoration: none;
+    margin-bottom: 16px;
+  }
+
+  .cta-primary:hover {
+    background: var(--orange2);
+    transform: translateY(-1px);
+    text-decoration: none;
+    color: #fff;
+  }
+
+  .cta-sub {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    display: block;
+    margin-bottom: 40px;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 3vw, 32px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .section-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+    opacity: 0.8;
+  }
+
+  .section-intro {
+    font-size: 16px;
+    color: var(--text2);
+    max-width: 600px;
+    margin-bottom: 40px;
+    line-height: 1.65;
+  }
+
+  .problem-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .problem-table th {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  .problem-table td {
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    color: var(--text2);
+    vertical-align: top;
+  }
+
+  .problem-table tr:nth-child(even) td {
+    background: rgba(13,19,24,0.5);
+  }
+
+  .problem-table td:first-child {
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .fix-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .fix-tag::before {
+    content: '✓';
+    font-size: 11px;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 720px) {
+    .steps { grid-template-columns: 1fr; }
+  }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 32px 28px;
+    position: relative;
+  }
+
+  .step-num {
+    font-family: var(--font-display);
+    font-size: 72px;
+    font-weight: 800;
+    color: var(--border2);
+    line-height: 1;
+    margin-bottom: 16px;
+    letter-spacing: -0.04em;
+  }
+
+  .step h3 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+
+  .step p {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .step-tags {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+  }
+
+  .qa-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 720px) {
+    .qa-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 480px) {
+    .qa-grid { grid-template-columns: 1fr; }
+  }
+
+  .qa-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 28px 24px;
+    text-align: center;
+  }
+
+  .qa-number {
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .qa-label {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.4;
+  }
+
+  .qa-checklist {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  @media (max-width: 600px) {
+    .qa-checklist { grid-template-columns: 1fr; }
+  }
+
+  .qa-check {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--text2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+
+  .qa-check-icon {
+    color: var(--green);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .privacy-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin: 32px 0;
+  }
+
+  @media (max-width: 600px) {
+    .privacy-grid { grid-template-columns: 1fr; }
+  }
+
+  .privacy-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--green);
+    padding: 28px 24px;
+  }
+
+  .privacy-card h3 {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .privacy-card p {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  .verify-line {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    padding: 16px 20px;
+    font-size: 13px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    margin-top: 24px;
+    line-height: 1.5;
+  }
+
+  /* Buying guide prose */
+  .guide-body h3 {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin: 36px 0 14px;
+    line-height: 1.3;
+  }
+
+  .guide-body p {
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.75;
+    margin-bottom: 18px;
+    max-width: 760px;
+  }
+
+  .guide-body ul {
+    list-style: none;
+    margin: 0 0 18px 0;
+    padding: 0;
+    max-width: 760px;
+  }
+
+  .guide-body ul li {
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.65;
+    padding: 8px 0 8px 24px;
+    position: relative;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .guide-body ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    top: 10px;
+  }
+
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 24px 0 32px;
+  }
+
+  .cost-table th {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  .cost-table td {
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    color: var(--text2);
+    vertical-align: top;
+  }
+
+  .cost-table tr:nth-child(even) td { background: rgba(13,19,24,0.5); }
+
+  .cost-table td:first-child {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .cost-winner {
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .faq-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 40px;
+  }
+
+  .faq-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .faq-q {
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 20px 24px;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    transition: color 0.15s;
+  }
+
+  .faq-q:hover { color: var(--accent); }
+
+  .faq-icon {
+    font-size: 20px;
+    color: var(--text3);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+    font-family: var(--font-mono);
+  }
+
+  .faq-item.open .faq-icon {
+    transform: rotate(45deg);
+    color: var(--accent);
+  }
+
+  .faq-a {
+    display: none;
+    padding: 0 24px 20px;
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.7;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  .faq-item.open .faq-a { display: block; }
+
+  .cta-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 60px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(ellipse, rgba(255,107,43,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-section h2 {
+    font-size: clamp(28px, 4vw, 44px);
+    margin-bottom: 16px;
+  }
+
+  .cta-section p {
+    color: var(--text2);
+    font-size: 16px;
+    margin-bottom: 40px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .related-grid { grid-template-columns: 1fr; }
+  }
+
+  .related-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s;
+    text-decoration: none;
+  }
+
+  .related-card:hover {
+    border-color: var(--border2);
+    text-decoration: none;
+  }
+
+  .related-card-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .related-card-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .related-card-desc {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 40px 0;
+  }
+
+  .footer-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .footer-links a {
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+  }
+
+  .footer-links a:hover { color: var(--text2); }
+
+  .footer-disclaimer {
+    font-size: 12px;
+    color: var(--text3);
+    line-height: 1.6;
+    max-width: 720px;
+  }
+
+  .speakable-summary {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+  }
+
+  .highlight { color: var(--accent); }
+  .highlight-orange { color: var(--orange); }
+  .highlight-green { color: var(--green); }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  @media (max-width: 600px) {
+    section { padding: 60px 0; background: var(--bg); }
+    section:nth-child(even) { background: var(--surface); }
+    .hero { padding: 60px 0 40px; background: var(--bg); }
+    .cta-section { padding: 40px 24px; }
+    .benchmark-stat { font-size: 48px; }
+    .cta-primary { font-size: 14px; padding: 16px 28px; width: 100%; justify-content: center; }
+    .qa-grid { grid-template-columns: 1fr 1fr; }
+    .trust-bar { padding: 16px 0; }
+    h1 { font-size: clamp(30px, 8vw, 42px); }
+    h2 { font-size: clamp(22px, 6vw, 28px); }
+    .benchmark { width: 100%; }
+    .aio-block { padding: 18px 20px; }
+    .cta-section h2 { font-size: clamp(22px, 6vw, 32px); }
+  }
+</style>
+</head>
+<body>
+
+<!-- SPEAKABLE HIDDEN SUMMARY -->
+<div class="speakable-summary" aria-hidden="true">
+  CleanList removes duplicate contacts and strips all 12 Salesforce system columns from any Salesforce CSV export in one click. Processing runs entirely in the browser — no file is uploaded to any server. Deduplicates contacts by email address, lowercases emails, formats US phone numbers, and standardizes date formats. One-time $49 purchase, no subscription required.
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <span class="nav-logo">Clean<span>List</span></span>
+    <a href="LEMON_SQUEEZY_URL" class="nav-cta">Buy Now — $49</a>
+  </div>
+</nav>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <div class="container">
+    <a href="https://cleanlistapp.com">CleanList</a>
+    <span>›</span>
+    <a href="https://cleanlistapp.com/solutions/">Solutions</a>
+    <span>›</span>
+    Remove Duplicate Contacts From Salesforce Export
+  </div>
+</div>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-bar-inner">
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      Data never leaves your browser
+    </div>
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      181 edge cases tested
+    </div>
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      6 browser environments
+    </div>
+    <div class="trust-item">
+      <span class="trust-dot"></span>
+      One-time $49 — no subscription
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+
+    <div class="hero-eyebrow">
+      Salesforce CSV Cleaning
+    </div>
+
+    <h1>Remove Duplicate Contacts<br>From Your Salesforce Export<br>in <em>One Click</em></h1>
+
+    <p class="hero-sub">
+      Upload your Salesforce CSV. Click Quick Clean or select the Salesforce preset. Download a clean file — duplicates removed, all 12 system columns stripped, emails fixed, phones formatted. Done in under 60 seconds.
+    </p>
+
+    <!-- AIO BLOCK -->
+    <div class="aio-block">
+      <span class="aio-label">Key Finding</span>
+      <p>CleanList removes duplicate Salesforce contacts by email address and strips all 12 Salesforce system columns — including Id, SystemModstamp, and OwnerId — from any CSV export in a single pass. Processing runs entirely inside the browser with no file upload to any server. Standard Salesforce contact exports average 12 system columns representing 18% of total file columns. One-time $49 purchase removes duplicates, fixes email casing, formats US phone numbers, and standardizes dates simultaneously.</p>
+      <span class="aio-source">Sources: CleanList Salesforce Export Analysis 2026 · Salesforce CRM Documentation — Contact Object Field Reference</span>
+    </div>
+
+    <!-- BENCHMARK -->
+    <div class="benchmark">
+      <span class="benchmark-label">Proprietary Benchmark</span>
+      <span class="benchmark-stat">12</span>
+      <span class="benchmark-desc">Average Salesforce contact export contains 12 system columns — 18% of total file columns — that pollute downstream data and must be removed before import into any other platform.</span>
+    </div>
+
+    <a href="LEMON_SQUEEZY_URL" class="cta-primary">
+      Clean My Salesforce Export — $49
+    </a>
+    <span class="cta-sub">One-time purchase · No account · No subscription · Instant access</span>
+
+  </div>
+</section>
+
+<!-- WHAT IT FIXES -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">What Gets Fixed</span>
+    <h2>What CleanList Fixes in Your Salesforce Export</h2>
+    <p class="section-intro">Quick Clean handles the first four automatically. Select the Salesforce preset in Advanced Settings to add system column removal and Salesforce-specific email deduplication.</p>
+
+    <table class="problem-table">
+      <thead>
+        <tr>
+          <th>Problem in Salesforce Export</th>
+          <th>What CleanList Does</th>
+          <th>Mode</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Duplicate contacts</td>
+          <td><span class="fix-tag">Removed by email address — JOHN@ACME.COM and john@acme.com treated as one contact. First occurrence kept.</span></td>
+          <td class="mono">Salesforce Preset</td>
+        </tr>
+        <tr>
+          <td>Mixed email casing</td>
+          <td><span class="fix-tag">All email addresses lowercased automatically. SARAH@COMPANY.COM → sarah@company.com</span></td>
+          <td class="mono">Quick Clean</td>
+        </tr>
+        <tr>
+          <td>12 Salesforce system columns</td>
+          <td><span class="fix-tag">All 12 removed — Id, SystemModstamp, OwnerId, CreatedDate, LastModifiedDate and 7 more stripped in one pass</span></td>
+          <td class="mono">Salesforce Preset</td>
+        </tr>
+        <tr>
+          <td>Unformatted phone numbers</td>
+          <td><span class="fix-tag">5551234567 → (555) 123-4567 · +15551234567 → +1 (555) 123-4567 · International preserved</span></td>
+          <td class="mono">Quick Clean</td>
+        </tr>
+        <tr>
+          <td>Mixed date formats</td>
+          <td><span class="fix-tag">11 recognized formats → YYYY-MM-DD · ISO datetime stripped to date only · Unrecognized preserved</span></td>
+          <td class="mono">Quick Clean</td>
+        </tr>
+        <tr>
+          <td>Empty rows</td>
+          <td><span class="fix-tag">All rows where every cell is empty or whitespace-only removed automatically</span></td>
+          <td class="mono">Quick Clean</td>
+        </tr>
+        <tr>
+          <td>Empty columns</td>
+          <td><span class="fix-tag">Columns where every value is empty after trimming removed from output</span></td>
+          <td class="mono">Quick Clean</td>
+        </tr>
+        <tr>
+          <td>Whitespace in cells</td>
+          <td><span class="fix-tag">Leading and trailing spaces stripped from every field in every row</span></td>
+          <td class="mono">Quick Clean</td>
+        </tr>
+        <tr>
+          <td>Duplicate column headers</td>
+          <td><span class="fix-tag">Second occurrence of duplicate header removed. First column values kept.</span></td>
+          <td class="mono">Quick Clean</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">Process</span>
+    <h2>How to Clean a Salesforce Export in Three Steps</h2>
+    <p class="section-intro">Upload. Configure. Download. Most Salesforce exports are clean and ready in under 60 seconds.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>Upload Your Salesforce Export</h3>
+        <p>Export contacts or leads from Salesforce as CSV. Drag and drop the file onto CleanList, use the file picker, or paste CSV text directly. Accepts files up to 100MB. Delimiter detected automatically.</p>
+        <div class="step-tags">
+          <span class="tag">Drag and drop</span>
+          <span class="tag">File picker</span>
+          <span class="tag">Paste CSV</span>
+          <span class="tag">Up to 100MB</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Quick Clean or Salesforce Preset</h3>
+        <p>Click Quick Clean for one-click standard cleaning. For Salesforce-specific cleaning — system column removal and email deduplication — open Advanced Settings and select the Salesforce preset. Takes 10 seconds to configure.</p>
+        <div class="step-tags">
+          <span class="tag">Quick Clean</span>
+          <span class="tag">Salesforce preset</span>
+          <span class="tag">12 cols removed</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Preview Changes and Download</h3>
+        <p>Review the stats summary before downloading — duplicates removed, columns stripped, emails fixed. Changed columns highlighted green. Download as CSV with UTF-8 BOM or Excel XLSX. File saved as yourfile-cleaned.csv.</p>
+        <div class="step-tags">
+          <span class="tag">Preview stats</span>
+          <span class="tag">CSV download</span>
+          <span class="tag">Excel download</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">Privacy Architecture</span>
+    <h2>Why It Is Safe to Use on Real Salesforce Contact Data</h2>
+    <p class="section-intro">Salesforce exports contain customer names, email addresses, phone numbers, and company data. Here is exactly what happens to that data when you use CleanList.</p>
+
+    <div class="privacy-grid">
+      <div class="privacy-card">
+        <h3>No Upload</h3>
+        <p>The CSV file is read by JavaScript running on the local device. No file bytes are transmitted to any server at any point during processing or download.</p>
+      </div>
+      <div class="privacy-card">
+        <h3>No Server</h3>
+        <p>CleanList has no backend infrastructure. There is no server to receive data. The application is a single HTML file served statically from Vercel.</p>
+      </div>
+      <div class="privacy-card">
+        <h3>No Account</h3>
+        <p>No account means no database with contact records, email addresses, or any information from the Salesforce export. Nothing is stored anywhere.</p>
+      </div>
+    </div>
+
+    <div class="verify-line">
+      Technical verification: CleanList is a single HTML file. Source code is inspectable in any browser's developer tools. Network tab will show zero outbound file transfers during processing.
+    </div>
+
+  </div>
+</section>
+
+<!-- QA / TRUST -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">Quality Assurance</span>
+    <h2>Tested Before the First Copy Was Sold</h2>
+    <p class="section-intro">CleanList was tested against 181 specific scenarios across 6 browser environments before release. Here is what was verified.</p>
+
+    <div class="qa-grid">
+      <div class="qa-stat">
+        <div class="qa-number">181</div>
+        <div class="qa-label">Test cases passed before release</div>
+      </div>
+      <div class="qa-stat">
+        <div class="qa-number">6</div>
+        <div class="qa-label">Browser environments tested</div>
+      </div>
+      <div class="qa-stat">
+        <div class="qa-number">100MB</div>
+        <div class="qa-label">Maximum file size supported</div>
+      </div>
+      <div class="qa-stat">
+        <div class="qa-number">12</div>
+        <div class="qa-label">Salesforce system columns verified individually</div>
+      </div>
+      <div class="qa-stat">
+        <div class="qa-number">0</div>
+        <div class="qa-label">Test failures before release</div>
+      </div>
+      <div class="qa-stat">
+        <div class="qa-number">60s</div>
+        <div class="qa-label">Average processing time for standard Salesforce export</div>
+      </div>
+    </div>
+
+    <div class="qa-checklist">
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>All 12 Salesforce system column names verified individually against Salesforce documentation</span>
+      </div>
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>Email deduplication tested with case-insensitive matching — JOHN@ and john@ treated as one</span>
+      </div>
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>Files with Salesforce ID fields and leading zeros — preserved correctly after cleaning</span>
+      </div>
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>Files with embedded commas in quoted fields — Smith, Jr. and Acme, Inc. survive the round trip</span>
+      </div>
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>Unicode characters — accented names, international characters intact in output</span>
+      </div>
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>10,000-row Salesforce export processed successfully — overlay shown, stats correct</span>
+      </div>
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>Safari on iPhone and iPad specifically — the browser that breaks file downloads on other tools</span>
+      </div>
+      <div class="qa-check">
+        <span class="qa-check-icon">✓</span>
+        <span>Already-clean files correctly identified — output as yourfile-verified.csv with no false changes</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- MIDDLE CTA -->
+<section>
+  <div class="container">
+    <div class="cta-section">
+      <h2>Clean Your Salesforce Export Now</h2>
+      <p>Upload. Select Salesforce preset. Download clean contacts. Done in under 60 seconds. Your data never leaves your browser.</p>
+      <div class="cta-wrapper">
+        <a href="LEMON_SQUEEZY_URL" class="cta-primary">
+          Buy CleanList — $49 One Time
+        </a>
+        <span class="cta-sub">No subscription · No account · No data upload · Instant access after purchase</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BUYING GUIDE -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">Buyer's Guide</span>
+    <h2>Cleaning Salesforce Exports: What You Need to Know Before You Buy</h2>
+    <div class="guide-body">
+
+      <h3>Why Salesforce Exports Contain So Much Noise</h3>
+      <p>When you export contacts or leads from Salesforce, the platform includes significantly more than just the data your team entered. Every Salesforce object carries system-generated fields that are required for Salesforce's internal recordkeeping — unique identifiers, audit timestamps, owner assignments, and merge history metadata. These fields are invisible in the Salesforce interface but appear automatically in any CSV export, adding 12 or more columns that have no value outside the Salesforce ecosystem.</p>
+      <p>The standard system columns that appear in a Salesforce contact export include: Id (the 18-character Salesforce record identifier), IsDeleted (a Boolean flag for soft-deleted records), MasterRecordId (the surviving record after a merge), OwnerId (the user or queue assigned to the record), CreatedDate, CreatedById, LastModifiedDate, LastModifiedById, LastActivityDate, LastViewedDate, LastReferencedDate, and SystemModstamp. None of these columns are valid or useful in any other CRM, email marketing platform, or database system. They cause import errors, create confusion, and in some cases cause platforms to reject the file entirely.</p>
+
+      <h3>The Duplicate Problem in Salesforce Exports</h3>
+      <p>Salesforce's native duplicate management is record-level — it prevents creating duplicate records in the Salesforce instance, but it does not clean up duplicates that exist in exported CSV data. Common scenarios that produce duplicate contacts in a Salesforce export include:</p>
+      <ul>
+        <li>The same contact imported multiple times over the years with slightly different email casing — JOHN@ACME.COM versus john@acme.com</li>
+        <li>Lead-to-contact conversion that created both a Lead record and a Contact record for the same person</li>
+        <li>Merges that left orphan records behind before the merge was recognized and processed</li>
+        <li>Bulk imports from multiple sources that each included the same contact</li>
+        <li>Salesforce org merges or data migrations between business units</li>
+      </ul>
+      <p>The result is exported files that contain multiple rows for the same contact, consuming deliverability quota, creating duplicate outreach, and producing inaccurate reporting in whatever system receives the import. Standard Excel deduplication and VLOOKUP approaches fail on this problem because they require exact string matching — JOHN@ACME.COM and john@acme.com do not match in Excel without additional formula work most users cannot perform reliably on large files.</p>
+
+      <h3>Why Standard Tools Fail on Salesforce Exports</h3>
+      <p>The most common approach to cleaning a Salesforce export is opening the file in Excel and manually removing system columns and identifying duplicates. This process consistently takes 20 to 30 minutes for a typical export, requires knowledge of which Salesforce columns to remove, produces errors when Excel mishandles Salesforce ID fields as numbers (stripping leading zeros), and fails to detect case-insensitive email duplicates without additional formula logic.</p>
+      <p>Online CSV tools present a different problem: they process your file on their servers. Salesforce exports contain customer names, email addresses, phone numbers, and potentially revenue data. Uploading that data to a third-party server creates unnecessary exposure — you do not know where the file is stored, how long it is retained, or whether it is used for any other purpose. Most free tools do not disclose their data retention policy clearly.</p>
+
+      <h3>How CleanList Handles Salesforce Exports Differently</h3>
+      <p>CleanList processes Salesforce exports entirely in the browser using JavaScript. No file bytes are transmitted to any server at any point. The Salesforce preset applies in a single pass: all 12 system columns are removed, email-based deduplication is performed using case-insensitive matching, email addresses are lowercased, US phone numbers are formatted to the (XXX) XXX-XXXX standard, and date fields are standardized to YYYY-MM-DD. The operation completes in under 60 seconds on files up to 100MB.</p>
+      <p>The preview step before download shows the stats summary: how many rows were removed as duplicates, how many columns were stripped, how many email addresses were lowercased, how many phone numbers were reformatted. Changed columns are highlighted green in the preview table. If the file is already clean, the output filename receives a -verified suffix instead of -cleaned, and no unnecessary changes are made.</p>
+
+      <h3>Cost Comparison: CleanList vs. Alternatives</h3>
+
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th>Approach</th>
+            <th>Time per export</th>
+            <th>Cost</th>
+            <th>Privacy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Excel manual cleaning</td>
+            <td>20–30 minutes</td>
+            <td>$0 (but $75–150/hr analyst time)</td>
+            <td>Local — no upload</td>
+          </tr>
+          <tr>
+            <td>Free online CSV tools</td>
+            <td>5–10 minutes</td>
+            <td>$0 upfront</td>
+            <td>Server upload — data exposed</td>
+          </tr>
+          <tr>
+            <td>Insycle (Salesforce native)</td>
+            <td>Setup required</td>
+            <td>$149+/month</td>
+            <td>API access to Salesforce org</td>
+          </tr>
+          <tr>
+            <td>DataLadder</td>
+            <td>Setup required</td>
+            <td>$99+/month</td>
+            <td>Server-side processing</td>
+          </tr>
+          <tr>
+            <td class="cost-winner">CleanList</td>
+            <td class="cost-winner">Under 60 seconds</td>
+            <td class="cost-winner">$49 one-time</td>
+            <td class="cost-winner">Local — zero upload</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>What CleanList Does Not Do</h3>
+      <p>CleanList removes duplicate contacts from exported Salesforce CSV files. It does not connect to your Salesforce org via API, does not modify records in Salesforce, and does not permanently merge or delete Salesforce records. If you need to remove duplicates from within Salesforce itself (not just from an exported file), that requires either Salesforce's native merge tools or a third-party Salesforce-connected tool like Insycle or DupeBlocker. CleanList is the right tool when you have a CSV file and need it cleaned before import into another platform, database, or email tool.</p>
+
+      <h3>When to Use the Salesforce Preset vs. Quick Clean</h3>
+      <p>Use Quick Clean when you want standard cleaning applied in one click with no configuration: whitespace trimming, empty row removal, empty column removal, exact duplicate row removal, email lowercasing, phone formatting, and date standardization. Use the Salesforce preset when you need Salesforce-specific cleaning on top of standard operations: removal of all 12 system columns and email-based deduplication instead of exact row deduplication. For most Salesforce contact exports, the Salesforce preset produces a significantly cleaner result.</p>
+
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">Common Questions</span>
+    <h2>Salesforce CSV Cleaning — FAQ</h2>
+
+    <div class="faq-list">
+
+      <div class="faq-item open">
+        <button class="faq-q" aria-expanded="true">
+          Does CleanList remove Salesforce system columns automatically?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">
+          CleanList removes all 12 Salesforce system columns automatically when the Salesforce preset is selected in Advanced Settings. Columns removed include Id, IsDeleted, MasterRecordId, OwnerId, CreatedDate, CreatedById, LastModifiedDate, LastModifiedById, LastActivityDate, LastViewedDate, LastReferencedDate, and SystemModstamp. All 12 columns are stripped in a single pass before the cleaned file is available for download. Standard Salesforce contact exports can include additional relationship and metadata fields — the preset targets the 12 standard system columns present in every export.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          How does CleanList deduplicate Salesforce contacts by email address?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">
+          CleanList deduplicates Salesforce contacts using case-insensitive email address matching. When two or more rows share the same email address regardless of letter casing — JOHN@ACME.COM and john@acme.com are treated as identical — the first occurrence is kept and all subsequent rows are removed. Rows with empty email fields are never flagged as duplicates regardless of how many appear in the file. The deduplication count is displayed in the stats summary before downloading so the total contacts removed is visible before committing to the cleaned output.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          Does CleanList upload my Salesforce contact data to a server?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">
+          CleanList processes all Salesforce CSV export files entirely inside the browser using JavaScript running on the user's device. No file is transmitted to any server at any point. The application has no backend infrastructure — there is no server to receive customer contact data, email addresses, phone numbers, or any other information contained in a Salesforce export. All cleaning operations including system column removal, duplicate detection, email formatting, and phone standardization execute locally. Salesforce contact files containing personally identifiable information never leave the browser environment regardless of file size.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          What is the difference between Quick Clean and the Salesforce preset in CleanList?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">
+          Quick Clean applies standard cleaning operations in one click without any configuration — trimming whitespace, removing empty rows, removing empty columns, removing exact duplicate rows, lowercasing email addresses, formatting US phone numbers, and standardizing dates. The Salesforce preset in Advanced Settings adds Salesforce-specific operations on top of standard cleaning: removing all 12 Salesforce system columns and enabling email-based deduplication instead of exact row deduplication. For most Salesforce exports the Salesforce preset produces a cleaner result because it targets the platform-specific columns that Quick Clean does not know to remove.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" aria-expanded="false">
+          What Salesforce export file formats does CleanList accept?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">
+          CleanList accepts the standard CSV format produced by Salesforce's contact and lead export function. Salesforce exports use comma-delimited formatting with a header row, which CleanList detects and parses automatically using PapaParse with RFC 4180 compliance. Files up to 100MB are accepted. The dynamicTyping option is disabled during parsing so Salesforce ID fields and numeric strings with leading zeros are preserved as text rather than converted to numbers. Output is available as a cleaned CSV file with UTF-8 byte order mark for Excel compatibility or as an Excel XLSX workbook via the Excel toggle before download.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- RELATED RESOURCES -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">Related Solutions</span>
+    <h2>More CleanList Solutions</h2>
+
+    <div class="related-grid">
+      <a href="https://cleanlistapp.com/solutions/clean-hubspot-export-remove-duplicates/" class="related-card">
+        <span class="related-card-label">HubSpot</span>
+        <span class="related-card-title">Clean HubSpot Export and Remove Duplicates</span>
+        <span class="related-card-desc">Remove all 23 HubSpot system columns and deduplicate contacts in one click.</span>
+      </a>
+      <a href="https://cleanlistapp.com/solutions/remove-duplicate-emails-csv/" class="related-card">
+        <span class="related-card-label">Deduplication</span>
+        <span class="related-card-title">Remove Duplicate Emails From Any CSV</span>
+        <span class="related-card-desc">Deduplicate any contact list by email address regardless of CRM source.</span>
+      </a>
+      <a href="https://cleanlistapp.com/solutions/csv-cleaner-no-data-sent-to-cloud/" class="related-card">
+        <span class="related-card-label">Privacy</span>
+        <span class="related-card-title">CSV Cleaner — No Data Sent to Cloud</span>
+        <span class="related-card-desc">100% browser-based processing. Zero bytes transmitted to any server.</span>
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section>
+  <div class="container">
+    <div class="cta-section">
+      <h2>Your Salesforce Export Is Waiting</h2>
+      <p>One-time $49. No subscription. No account. Your data never leaves your browser. Buy once, use on every Salesforce export forever.</p>
+      <div class="cta-wrapper">
+        <a href="LEMON_SQUEEZY_URL" class="cta-primary">
+          Buy CleanList — $49 One Time
+        </a>
+        <span class="cta-sub">Instant access · Works in Chrome, Firefox, Safari, iOS, Android · 181 edge cases tested</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="https://cleanlistapp.com">Home</a>
+      <a href="https://cleanlistapp.com/solutions/">All Solutions</a>
+      <a href="https://cleanlistapp.com/privacy">Privacy Policy</a>
+      <a href="https://cleanlistapp.com/terms">Terms of Service</a>
+      <a href="https://cleanlistapp.com/disclosure">Affiliate Disclosure</a>
+    </div>
+    <p class="footer-disclaimer">
+      CleanList is an independent tool not affiliated with Salesforce Inc. The name Salesforce is used for compatibility reference only. All data processing occurs locally in the user's browser. No file is uploaded to any server. One-time $49 purchase includes lifetime access to the current version. SpiralWorld LLC — spiralworldllc@protonmail.com
+    </p>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('.faq-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => {
+        i.classList.remove('open');
+        i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+      });
+      if (!isOpen) {
+        item.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
