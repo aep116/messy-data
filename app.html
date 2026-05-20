@@ -1338,38 +1338,38 @@ function buildColIndex(headers) {
   return idx;
 }
 
-/* Title case — handles Mc, Mac, O' edge cases */
+/* Title case — capitalizes after spaces, hyphens, and apostrophes; handles Mc/Mac prefixes; Unicode-safe */
 function titleCase(val) {
   if (!val) return val;
-  return val.replace(/\S+/g, w => {
-    if (/^Mc.+/i.test(w) && w.length > 2) {
-      return 'Mc' + w[2].toUpperCase() + w.slice(3).toLowerCase();
-    }
-    if (/^Mac[A-Z]/i.test(w) && w.length > 3) {
-      return 'Mac' + w[3].toUpperCase() + w.slice(4).toLowerCase();
-    }
-    if (/^O'/i.test(w) && w.length > 2) {
-      return "O'" + w[2].toUpperCase() + w.slice(3).toLowerCase();
-    }
-    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-  });
+  return val.toLowerCase()
+    // Capitalize first non-whitespace char after: start, space, tab, hyphen, or apostrophe
+    .replace(/(^|[ \t\-'])(\S)/g, (_, sep, ch) => sep + ch.toUpperCase())
+    // Re-capitalize third char for Mc- prefix names (e.g. Mcallister → McAllister)
+    .replace(/\b(Mc)([a-z])/g, (_, pfx, ch) => pfx + ch.toUpperCase())
+    // Re-capitalize fourth char for Mac- prefix names (e.g. Macdonald → MacDonald)
+    .replace(/\b(Mac)([a-z])/g, (_, pfx, ch) => pfx + ch.toUpperCase());
 }
 
-/* Phone standardization: 10-digit → (XXX) XXX-XXXX, 11-digit starting 1 → +1 (XXX) XXX-XXXX */
+/* Phone standardization: 10-digit → (XXX) XXX-XXXX, +1XXXXXXXXXX → (XXX) XXX-XXXX, international preserved */
 function standardizePhone(val) {
   if (!val) return { out: val, changed: false };
   const s = String(val).trim();
   if (!s) return { out: s, changed: false };
+  // Preserve international numbers: starts with + and country code is not 1 (US/Canada)
+  if (s.startsWith('+')) {
+    const afterPlus = s.slice(1).replace(/\D/g, '');
+    if (!afterPlus.startsWith('1')) return { out: s, changed: false };
+    // Falls through: +1XXXXXXXXXX treated as US number
+  }
   const digits = s.replace(/\D/g, '');
   if (digits.length === 10) {
     const out = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
     return { out, changed: out !== s };
   }
   if (digits.length === 11 && digits[0] === '1') {
-    const out = `+1 (${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
+    const out = `(${digits.slice(1,4)}) ${digits.slice(4,7)}-${digits.slice(7)}`;
     return { out, changed: out !== s };
   }
-  // International — preserve unchanged
   return { out: s, changed: false };
 }
 
@@ -1458,6 +1458,17 @@ function standardizeDate(val, locale) {
   return { out, changed: out !== s };
 }
 
+/* Validate email format: requires local@domain.tld with no empty parts */
+function isValidEmail(email) {
+  if (!email) return true;
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
+  const [local, domain] = parts;
+  if (!local.length) return false;
+  const domainParts = domain.split('.');
+  return domainParts.length >= 2 && domainParts.every(p => p.length > 0);
+}
+
 /* Check if a row has no contact identity data (email, name, phone, company) */
 function isRowEmpty(row, headers) {
   const identityTypes = new Set(['email', 'firstName', 'lastName', 'fullName', 'phone', 'company']);
@@ -1508,9 +1519,22 @@ function runFuzzyDedup(rows, headers, colIdx, threshold) {
 
 /* ── Main cleaning function ─────────────────────────────────────── */
 function cleanData(rawRows, rawHeaders, settings) {
-  const stats = { dupes: 0, emptyRows: 0, colsRemoved: 0, dates: 0, phones: 0, dupHeaders: 0, emailsCased: 0, namesCased: 0 };
+  const stats = { dupes: 0, emptyRows: 0, colsRemoved: 0, dates: 0, phones: 0, dupHeaders: 0, emailsCased: 0, namesCased: 0, deletedRows: 0, invalidEmails: 0 };
   let headers = [...rawHeaders];
   let rows = rawRows.map(r => ({ ...r }));
+
+  // 0. Salesforce: remove soft-deleted records before anything else
+  if (settings.preset === 'salesforce') {
+    const delCol = rawHeaders.find(h => h.toLowerCase() === 'isdeleted');
+    if (delCol) {
+      const before = rows.length;
+      rows = rows.filter(row => {
+        const v = String(row[delCol] || '').trim().toLowerCase();
+        return v !== 'true' && v !== '1';
+      });
+      stats.deletedRows = before - rows.length;
+    }
+  }
 
   // 1. Remove duplicate column headers (keep first occurrence)
   if (settings.dupHeaders) {
@@ -1606,6 +1630,31 @@ function cleanData(rawRows, rawHeaders, settings) {
       }
       return r;
     });
+  }
+
+  // 8b. Validate emails — remove or clear invalid addresses
+  if (colIdx.email !== undefined) {
+    const emailCol = headers[colIdx.email];
+    const phoneCols = headers.filter(h => detectColType(h) === 'phone');
+    const validRows = [];
+    rows.forEach(row => {
+      const email = row[emailCol] ? String(row[emailCol]).trim() : '';
+      if (email && !isValidEmail(email)) {
+        stats.invalidEmails++;
+        const hasName =
+          (colIdx.firstName !== undefined && String(row[headers[colIdx.firstName]] || '').trim()) ||
+          (colIdx.lastName  !== undefined && String(row[headers[colIdx.lastName]]  || '').trim()) ||
+          (colIdx.fullName  !== undefined && String(row[headers[colIdx.fullName]]  || '').trim());
+        const hasPhone = phoneCols.some(col => String(row[col] || '').trim());
+        if (!hasName && !hasPhone) return; // drop row — no other identity
+        const r = { ...row };
+        r[emailCol] = '';
+        validRows.push(r);
+      } else {
+        validRows.push(row);
+      }
+    });
+    rows = validRows;
   }
 
   // 9. Title case names
@@ -2001,8 +2050,10 @@ function renderPreview(hasFuzzy) {
   const emailsCased = cleanStats.emailsCased || 0;
   const namesCased = cleanStats.namesCased || 0;
 
+  if (cleanStats.deletedRows) addStat('IsDeleted records removed', cleanStats.deletedRows);
   if (totalDupes) addStat('duplicates removed', totalDupes);
   if (emptyRowsRemoved) addStat('empty rows dropped', emptyRowsRemoved);
+  if (cleanStats.invalidEmails) addStat('invalid emails cleared', cleanStats.invalidEmails);
   if (colsRemoved) addStat('columns removed', colsRemoved);
   if (datesConverted) addStat('dates converted', datesConverted);
   if (phonesFormatted) addStat('phones reformatted', phonesFormatted);
