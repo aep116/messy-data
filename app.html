@@ -1289,10 +1289,30 @@ const CRM_COLS = {
     'CreatedDate','LastModifiedDate','LastActivityDate','LastViewedDate','LastReferencedDate'
   ],
   apollo: [
-    'sequence_name','step_number','email_open_count','email_click_count',
-    'reply_count','bounced','apollo_contact_id','account_id',
-    'apollo_account_id','stage','last_contacted_at','contact_stage_id',
-    'sequence_id','sequence_step_id','last_activity_date'
+    // Identity and tracking
+    'id','created_at','updated_at','person_id','account_id','account_id_apollo',
+    'contact_stage_id','suggested_from_rule_engine_config_id',
+    'email_needs_tickling','has_pending_email_arcgate_request',
+    'extrapolated_email_confidence','do_not_contact',
+    // CRM integration IDs
+    'salesforce_id','salesforce_lead_id','salesforce_contact_id',
+    'salesforce_account_id','salesforce_owner_id',
+    'crm_owner_id','owner_id','creator_id','prospected_by_id',
+    'hubspot_vid','marketo_id','outreach_id','salesloft_id',
+    // Social and web
+    'twitter_url','linkedin_url','github_url','facebook_url','company_linkedin_url',
+    // Campaign and sequence
+    'sequence_name','step_number','sequence_id','sequence_step_id',
+    'emailer_campaign_ids','contact_campaign_statuses','label_ids',
+    'typed_custom_fields','lists',
+    // Enrichment metadata
+    'headline','keywords','technologies','departments','seniority',
+    'email_status','email_open_count','email_click_count',
+    'reply_count','bounced','last_contacted_at','last_activity_date',
+    'phone_numbers','raw_address','present_raw_address',
+    'company_name_for_emails','num_linkedin_connections','account_phone_numbers',
+    // Legacy Apollo system cols
+    'apollo_contact_id','apollo_account_id','stage'
   ],
   mailchimp: [
     'UNSUB','BOUNCE','STATUS','MEMBER_RATING','OPTIN_TIME','OPTIN_IP',
@@ -1322,8 +1342,8 @@ const PRESET_CONFIGS = {
     dupHeaders: true, fuzzy: false
   },
   apollo: {
-    dedupExact: false, dedupEmail: true, lowercaseEmail: false,
-    titleCase: false, phoneFmt: false, dateFmt: false,
+    dedupExact: false, dedupEmail: true, lowercaseEmail: true,
+    titleCase: true, phoneFmt: true, dateFmt: false,
     trim: true, emptyRows: true, emptyCols: false,
     dupHeaders: true, fuzzy: false
   },
@@ -1593,6 +1613,42 @@ function cleanData(rawRows, rawHeaders, settings) {
     }
   }
 
+  // 0.5. Apollo: extract phone_numbers JSON into individual phone columns before system col stripping
+  if (settings.preset === 'apollo') {
+    const pnCol = headers.find(h => h.toLowerCase() === 'phone_numbers');
+    if (pnCol) {
+      const destMap = {
+        work: 'corporate_phone', direct: 'corporate_phone', hq: 'corporate_phone',
+        mobile: 'mobile_phone', fax: 'other_phone', other: 'other_phone'
+      };
+      // Add phone target columns to headers if not already present
+      ['corporate_phone', 'mobile_phone'].forEach(col => {
+        if (!headers.find(h => h.toLowerCase() === col)) headers.push(col);
+      });
+      rows = rows.map(row => {
+        // Strip extra CSV-roundtrip quotes and leading/trailing whitespace
+        const raw = String(row[pnCol] || '').trim().replace(/^"+|"+$/g, '');
+        if (!raw || raw === '[]' || !raw.includes('number')) return row;
+        const r = { ...row };
+        const entries = raw.match(/\{[^}]+\}/g) || [];
+        entries.forEach(entry => {
+          const typeMatch = entry.match(/"?type"?\s*:\s*"?(\w+)"?/i);
+          // Prefer sanitized_number, fall back to raw_number or number
+          const numMatch = entry.match(
+            /"?sanitized_number"?\s*:\s*"([^"]+)"|"?raw_number"?\s*:\s*"([^"]+)"|"?number"?\s*:\s*"?([+\d\s\-\(\)\.]{6,})/i
+          );
+          if (!numMatch) return;
+          const num = (numMatch[1] || numMatch[2] || numMatch[3] || '').trim().replace(/["']+$/, '');
+          if (!num) return;
+          const type = typeMatch ? typeMatch[1].toLowerCase() : 'other';
+          const dest = destMap[type] || 'other_phone';
+          if (!r[dest] || String(r[dest]).trim() === '') r[dest] = num;
+        });
+        return r;
+      });
+    }
+  }
+
   // 1. Remove duplicate column headers (keep first occurrence)
   if (settings.dupHeaders) {
     const seen = new Set();
@@ -1619,6 +1675,7 @@ function cleanData(rawRows, rawHeaders, settings) {
       CRM_COLS[settings.crmCols].map(c => c.toLowerCase())
     );
     const isHubspot = settings.crmCols === 'hubspot';
+    const isApollo  = settings.crmCols === 'apollo';
     const origLen = headers.length;
     headers = headers.filter(h => {
       const hl = h.toLowerCase();
@@ -1626,6 +1683,11 @@ function cleanData(rawRows, rawHeaders, settings) {
       if (isHubspot && (
         hl.startsWith('hs_') || hl.startsWith('hubspot_') ||
         hl.startsWith('num_') || hl.startsWith('notes_') || hl.startsWith('ip_')
+      )) return false;
+      if (isApollo && (
+        hl.startsWith('salesforce_') || hl.startsWith('crm_') ||
+        hl.startsWith('hs_') || hl.startsWith('hubspot_') ||
+        hl.startsWith('outreach_') || hl.startsWith('salesloft_') || hl.startsWith('marketo_')
       )) return false;
       return true;
     });
@@ -1649,6 +1711,35 @@ function cleanData(rawRows, rawHeaders, settings) {
       headers.forEach(h => { r[h] = row[h] != null ? String(row[h]).trim() : row[h]; });
       return r;
     });
+  }
+
+  // 4.5. Apollo: reconcile name/first_name/last_name fields
+  if (settings.preset === 'apollo') {
+    const fnCol = colIdx.firstName !== undefined ? headers[colIdx.firstName] : null;
+    const lnCol = colIdx.lastName  !== undefined ? headers[colIdx.lastName]  : null;
+    const nmCol = colIdx.fullName  !== undefined ? headers[colIdx.fullName]  : null;
+    if (fnCol || lnCol || nmCol) {
+      rows = rows.map(row => {
+        const r = { ...row };
+        const fn = fnCol ? String(r[fnCol] || '').trim() : '';
+        const ln = lnCol ? String(r[lnCol] || '').trim() : '';
+        const nm = nmCol ? String(r[nmCol] || '').trim() : '';
+        if (!fn && nm) {
+          // Derive first_name (and optionally last_name) from combined name field
+          const lastSpace = nm.lastIndexOf(' ');
+          if (lastSpace === -1) {
+            if (fnCol) r[fnCol] = nm;
+          } else {
+            if (fnCol) r[fnCol] = nm.slice(0, lastSpace);
+            if (lnCol && !ln) r[lnCol] = nm.slice(lastSpace + 1);
+          }
+        } else if (fn && ln && nmCol && !nm) {
+          // Reconstruct combined name from parts
+          r[nmCol] = fn + ' ' + ln;
+        }
+        return r;
+      });
+    }
   }
 
   // 5. Remove empty rows
